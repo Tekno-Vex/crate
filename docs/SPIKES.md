@@ -64,10 +64,23 @@ auto-discover folders; if not, the helper asks the user once.
 
 | Spike | Date | Spotify | Spicetify | Result | Follow-up |
 | ----- | ---- | ------- | --------- | ------ | --------- |
-| S1    |      |         |           |        |           |
-| S2    |      |         |           |        |           |
+| S1    | 2026-10-20 | 1.3.5.3058 (Win) | 2.45.3 | ✅ `LocalFilesAPI.getTracks()` → plain array, 615 tracks in 57 ms. Per track: `trackNumber`, `discNumber` (numbers, **0 = untagged**; 581/615 numbered, 16 with disc > 0), `addedAt` (**Date**), `album.{name,uri,artist,images}`, `artists[]`, `duration.milliseconds`, `uid`, `isLocal/isPlayable`. Cover = `spotify:localfileimage:<encoded file path>` (609/615) → **file path for free**; renders in `<img>`. | Mapper updated + real fixture. Follow-up probe: does `album.artist` reflect the album-artist tag? are `artists[]` ever split? why 27 albums lack numbering? |
+| S2    | 2026-10-20 | 1.3.5.3058 (Win) | 2.45.3 | ✅ No CSP block. HTTP to 127.0.0.1 and localhost, and WS to 127.0.0.1, all fail with a connection-refused error and record no CSP violations (≈2 s each — Windows refused-connect retry). | HTTP transport OK. Helper must answer CORS (+ Private Network Access preflight) for the renderer origin — origin now in the Versions block. |
 | S3    |      |         |           |        |           |
 | S4    |      |         |           |        |           |
-| S5    |      |         |           |        |           |
-| S6    |      |         |           |        |           |
+| S5    | 2026-10-20 | 1.3.5.3058 (Win) | 2.45.3 | Partial: 20 real URIs. Spotify percent-encodes `' ( ) $ ? / , & [ ]` and UTF-8; leaves `- .` raw; space → `+`. Our encoder left `'()` raw → **fixed**. | `tests/localUri.test.ts`. Still need `! * ~`, empty album/artist, duration rounding. |
+| S6    | 2026-10-20 | 1.3.5.3058 (Win) | 2.45.3 | Partial: no local-folder keys in either prefs file. But `LocalFilesAPI.getSources()` exists (also `addFolder/removeFolder/browseForFolder`), and every track's file path is in its cover URI. | `getLocalSourcesRaw()` added; shape pending next report. Helper can take folders from the app — no prefs parsing. |
 | S7    |      |         |           |        |           |
+
+### Notes — 2026-10-20 (Spotify 1.3.5.3058, Spicetify 2.45.3, Windows 11)
+
+- **Tier 1 is much stronger than feared.** Spotify reads track numbers, disc numbers and date added
+  for local files. Album pages get real track order, Recently Added works, and file paths (folder
+  view, helper matching) come for free via the cover URI. The helper's job narrows to album
+  artist, year, genre, composer, full-res art and **writing**.
+- `PlatformData` has no `client_version_*` / `os_name` on 1.3.5; version comes from the user agent.
+  `Platform.version` / `Platform.operatingSystem` exist (values pending).
+- PlayerAPI on 1.3.5 has `play`, `updateContext`, `skipTo`, `insertIntoQueue`, `refreshCurrentContext`
+  — candidates for S3.
+- LocalFilesAPI has track-update events (`_subscribeToTracksUpdates`, `_emitTrackUpdate`, debounce
+  timers) — relevant to S4 (rescan detection) and the library store's diff-on-rescan.

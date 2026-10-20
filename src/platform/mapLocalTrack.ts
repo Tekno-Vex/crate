@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Maps whatever Spotify's LocalFilesAPI returns into our Track model.
-// The raw shape is UNVERIFIED (spike S1) — read every field defensively and accept common variants.
+// Raw shape verified on Spotify 1.3.5.3058 (spike S1, 2026-10-20) — see tests/fixtures.ts
+// REAL_LOCAL_TRACK. Still read defensively: the shape can change between Spotify versions.
 // Pure: no Spicetify access, so it is unit-tested.
 
 import { splitArtists } from '../domain/artists';
@@ -28,6 +29,27 @@ export function toImageUrl(uri: string | undefined): string | undefined {
   return m ? `https://i.scdn.co/image/${m[1]}` : uri;
 }
 
+/**
+ * Spotify's local cover URI is the audio file's own path:
+ * spotify:localfileimage:<encodeURIComponent(absolute path)>. Verified S1 on 1.3.5 (Windows).
+ */
+export function filePathFromImageUri(uri: string | undefined): string | undefined {
+  const m = /^spotify:localfileimage:(.+)$/.exec(uri ?? '');
+  if (!m) return undefined;
+  try {
+    return decodeURIComponent(m[1]!);
+  } catch {
+    return undefined;
+  }
+}
+
+function toEpochMs(v: unknown): number | undefined {
+  if (v instanceof Date) return Number.isNaN(v.getTime()) ? undefined : v.getTime();
+  if (typeof v === 'number') return v;
+  if (typeof v === 'string') return Date.parse(v) || undefined;
+  return undefined;
+}
+
 function pickImage(raw: any): string | undefined {
   const images: any[] = raw?.album?.images ?? raw?.images ?? raw?.album?.coverArt?.sources ?? [];
   if (!Array.isArray(images) || images.length === 0) return toImageUrl(str(raw?.album?.image));
@@ -47,19 +69,22 @@ export function mapLocalTrack(raw: any, originalIndex: number): Track | null {
   if (!uri) return null;
   const fromUri = parseLocalUri(uri);
   const display = artistDisplay(raw) || fromUri?.artist || '';
-  const added = raw?.addedAt ?? raw?.added_at ?? raw?.dateAdded;
+  const imageUrl = pickImage(raw);
   return {
     uri,
     title: str(raw?.name) ?? str(raw?.title) ?? fromUri?.title ?? 'Unknown Title',
     artists: splitArtists(display),
     artistDisplay: display,
     album: str(raw?.album?.name) ?? str(raw?.album) ?? fromUri?.album ?? '',
-    // UNVERIFIED (spike S1): field names for track/disc numbers on local tracks.
+    // Verified S1: trackNumber/discNumber are always present numbers; 0 means "not tagged".
     trackNumber: num(raw?.trackNumber) ?? num(raw?.track_number) ?? num(raw?.trackIndex),
     discNumber: num(raw?.discNumber) ?? num(raw?.disc_number),
     durationMs: durationMs(raw) || (fromUri?.durationSec ?? 0) * 1000,
-    imageUrl: pickImage(raw),
-    addedAt: typeof added === 'number' ? added : typeof added === 'string' ? Date.parse(added) || undefined : undefined,
+    imageUrl,
+    // Verified S1: addedAt is a Date object (JSON shows it as an ISO string).
+    addedAt: toEpochMs(raw?.addedAt ?? raw?.added_at ?? raw?.dateAdded),
+    // Only tracks with a cover expose this (609/615 in S1); the helper fills the rest later.
+    filePath: filePathFromImageUri(imageUrl),
     source: 'spotify',
     originalIndex,
   };

@@ -1,5 +1,7 @@
 // Spotify local track URIs: spotify:local:<artist>:<album>:<title>:<durationSeconds>
-// Components are URL-encoded with "+" for spaces. Exact rules: UNVERIFIED (spike S5).
+// Components are URL-encoded with "+" for spaces. Verified on 1.3.5 (S1/S5 partial, 2026-10-20):
+// ' ( ) $ ? / , & are percent-encoded; - and . are left raw; non-ASCII is UTF-8 percent-encoded.
+// UNVERIFIED (spike S5): ! * ~ and empty components.
 
 export interface LocalUriParts {
   artist: string;
@@ -23,7 +25,10 @@ function decode(part: string): string {
 }
 
 function encode(part: string): string {
-  return encodeURIComponent(part).replace(/%20/g, '+');
+  // encodeURIComponent leaves !'()* raw; Spotify encodes at least ' ( ).
+  return encodeURIComponent(part)
+    .replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)
+    .replace(/%20/g, '+');
 }
 
 export function parseLocalUri(uri: string): LocalUriParts | null {

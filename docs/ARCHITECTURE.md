@@ -45,7 +45,7 @@ CSS is bundled as text and injected into a `<style id="crate-styles">` by both e
 
 - `Track` — `uri` (spotify:local:…), `title`, `artists: string[]` (split), `artistDisplay`,
   `album`, `albumArtist?`, `trackNumber?`, `trackTotal?`, `discNumber?`, `discTotal?`,
-  `durationMs`, `year?`, `genre?`, `imageUrl?`, `addedAt?`, `filePath?` (helper only),
+  `durationMs`, `year?`, `genre?`, `imageUrl?`, `addedAt?`, `filePath?` (decoded from Spotify's `spotify:localfileimage:` cover URI, else helper),
   `source: 'spotify' | 'spotify+helper'`, `originalIndex`.
 - `Album` — `key` (stable), `title`, `albumArtist` (or "Various Artists"), `artists`,
   `tracks: Track[]` (ordered), `discs: number[]`, `year?`, `durationMs`, `imageUrl?`.

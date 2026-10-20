@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { buildLibrary } from '../../domain/grouping';
+import type { Library } from '../../domain/model';
 import { hasReliableNumbering } from '../../domain/ordering';
 import {
   copyToClipboard,
   describeApi,
+  getLocalSourcesRaw,
   getLocalTracksRaw,
   getVersions,
   listPlatformApis,
@@ -45,6 +47,57 @@ function Json({ value }: { value: unknown }) {
   return <pre className="crate-pre">{JSON.stringify(value, null, 2)}</pre>;
 }
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/** Second-round S1 questions (2026-10-20): album artist semantics, artist splitting, numbering gaps, S6 sources. */
+async function s1FollowUp(raws: any[], lib: Library) {
+  const names = (r: any): string[] => (Array.isArray(r?.artists) ? r.artists.map((a: any) => a?.name) : []);
+  const albumArtistDiffers = raws.filter((r) => r?.album?.artist?.name && r.album.artist.name !== names(r)[0]);
+  const multiArtist = raws.filter((r) => names(r).length > 1);
+  const weak = lib.albums.filter((a) => !hasReliableNumbering(a.tracks));
+  const dupNumbered = lib.albums.filter((a) => {
+    const seen = new Set<string>();
+    return a.tracks.some((t) => {
+      if (t.trackNumber === undefined) return false;
+      const k = `${t.discNumber ?? 1}-${t.trackNumber}`;
+      return seen.has(k) || !seen.add(k);
+    });
+  });
+  const paths = lib.tracks.map((t) => t.filePath).filter((p): p is string => !!p);
+  const prefix = paths.reduce((acc, p) => {
+    let i = 0;
+    while (i < acc.length && acc[i] === p[i]) i++;
+    return acc.slice(0, i);
+  }, paths[0] ?? '');
+  const sources = await getLocalSourcesRaw();
+  return {
+    albumArtistDiffersFromFirstTrackArtist: {
+      count: albumArtistDiffers.length,
+      samples: albumArtistDiffers.slice(0, 10).map((r) => ({
+        album: r.album.name,
+        albumArtist: r.album.artist.name,
+        trackArtists: names(r),
+      })),
+    },
+    multiArtistTracks: { count: multiArtist.length, samples: multiArtist.slice(0, 8).map(names) },
+    commaInSingleArtist: raws.filter((r) => names(r).length === 1 && /, |; | & /.test(names(r)[0] ?? '')).slice(0, 8).map((r) => names(r)[0]),
+    weakNumberingAlbums: weak.slice(0, 30).map((a) => ({
+      title: a.title,
+      artist: a.albumArtist,
+      tracks: a.tracks.length,
+      numbered: a.tracks.filter((t) => t.trackNumber !== undefined).length,
+    })),
+    albumsWithDuplicateTrackNumbers: dupNumbered.slice(0, 15).map((a) => ({
+      title: a.title,
+      artists: a.artists.slice(0, 5),
+      tracks: a.tracks.length,
+    })),
+    tracksWithFilePath: paths.length,
+    commonPathPrefix: prefix,
+    sources: sources.ok ? sources.value : sources.error,
+  };
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
 export function DiagnosticsPage() {
   const base = useMemo(() => {
     const apis = listPlatformApis();
@@ -79,6 +132,7 @@ export function DiagnosticsPage() {
       const raws = res.value;
       const tracks = mapLocalTracks(raws);
       const lib = buildLibrary(tracks);
+      const followUp = await s1FollowUp(raws, lib);
       const imageSchemes = [...new Set(tracks.map((t) => t.imageUrl?.split(':').slice(0, 2).join(':') ?? 'none'))];
       // Pick 3 tracks from the same album (for S3 experiments).
       const firstMulti = lib.albums.find((a) => a.tracks.length >= 3);
@@ -102,6 +156,7 @@ export function DiagnosticsPage() {
             .map((t) => t.uri)
             .filter((u) => /%|[^\x20-\x7e]/.test(u))
             .slice(0, 20),
+          followUp,
         },
       }));
     });

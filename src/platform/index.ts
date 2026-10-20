@@ -46,6 +46,11 @@ export interface Versions {
   platform?: string;
   /** Primitive PlatformData fields, so Diagnostics shows the real key names. */
   platformData?: Record<string, string | number | boolean>;
+  /** UNVERIFIED (spike S1): top-level Platform.version / Platform.operatingSystem values. */
+  platformVersion?: unknown;
+  operatingSystem?: unknown;
+  /** Renderer origin — the helper's CORS allow-list needs this (spike S2). */
+  origin?: string;
 }
 
 function osFromPlatform(p: unknown): string | undefined {
@@ -75,7 +80,15 @@ export function getVersions(): Versions {
     osVersion: pd.os_version,
     platform: pd.app_platform,
     platformData,
+    platformVersion: primitiveOrKeys(s?.Platform?.version),
+    operatingSystem: primitiveOrKeys(s?.Platform?.operatingSystem),
+    origin: globalThis.location?.origin,
   };
+}
+
+function primitiveOrKeys(v: unknown): unknown {
+  if (v === null || typeof v !== 'object') return typeof v === 'function' ? '[function]' : v;
+  return { keys: Object.keys(v) };
 }
 
 /** Top-level Spicetify.Platform API names — Diagnostics uses this to find what moved. */
@@ -98,7 +111,21 @@ export function describeApi(name: string): string[] {
 
 // ───────────────────────── local files ─────────────────────────
 
-/** Raw objects from Spotify. UNVERIFIED (spike S1): API name and method. */
+/**
+ * Folders Spotify scans for local files. LocalFilesAPI.getSources exists on 1.3.5 (S1 method list);
+ * UNVERIFIED (spike S6): return shape — returned raw until a report shows it.
+ */
+export async function getLocalSourcesRaw(): Promise<Result<unknown>> {
+  const api = S()?.Platform?.LocalFilesAPI;
+  if (typeof api?.getSources !== 'function') return fail('unavailable', 'LocalFilesAPI.getSources not found');
+  try {
+    return ok(await api.getSources());
+  } catch (e) {
+    return fail('failed', 'LocalFilesAPI.getSources() threw', String(e));
+  }
+}
+
+/** Raw objects from Spotify. Verified on 1.3.5 (S1): getTracks() resolves to a plain array. */
 export async function getLocalTracksRaw(): Promise<Result<unknown[]>> {
   const api = S()?.Platform?.LocalFilesAPI;
   if (!api) return fail('unavailable', 'Spicetify.Platform.LocalFilesAPI not found on this Spotify version');

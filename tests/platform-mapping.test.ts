@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildLocalUri, isLocalUri, parseLocalUri } from '../src/domain/localUri';
-import { fieldInventory, mapLocalTrack, toImageUrl } from '../src/platform/mapLocalTrack';
+import { fieldInventory, filePathFromImageUri, mapLocalTrack, toImageUrl } from '../src/platform/mapLocalTrack';
+import { realLocalTrack } from './fixtures';
 
 describe('local URIs (spike S5 will add real-world cases)', () => {
   it('parses spotify:local URIs', () => {
@@ -29,7 +30,7 @@ describe('local URIs (spike S5 will add real-world cases)', () => {
   });
 });
 
-describe('mapLocalTrack (raw shape UNVERIFIED until spike S1)', () => {
+describe('mapLocalTrack', () => {
   it('maps a plausible raw local track', () => {
     const t = mapLocalTrack(
       {
@@ -52,6 +53,29 @@ describe('mapLocalTrack (raw shape UNVERIFIED until spike S1)', () => {
       imageUrl: 'https://i.scdn.co/image/def456',
       originalIndex: 7,
     });
+  });
+  it('maps the real 1.3.5 shape (spike S1)', () => {
+    const t = mapLocalTrack(realLocalTrack(), 0);
+    expect(t).toMatchObject({
+      title: 'City Light (In Still Dark Forenoon Silence)',
+      album: 'Burning For The Ancient',
+      artists: ['Addaura'],
+      trackNumber: 1,
+      durationMs: 624_000,
+      addedAt: Date.parse('2026-09-03T16:54:24.000Z'),
+      filePath:
+        'C:\\Users\\kathi\\Music\\iTunes\\iTunes Media\\Music\\Addaura\\Burning For The Ancient\\01 City Light (In Still Dark Forenoo.mp3',
+    });
+    expect(t!.discNumber).toBeUndefined(); // 0 = untagged
+    expect(t!.imageUrl).toMatch(/^spotify:localfileimage:/);
+  });
+  it('treats trackNumber 0 as missing', () => {
+    expect(mapLocalTrack({ ...realLocalTrack(), trackNumber: 0 }, 0)!.trackNumber).toBeUndefined();
+  });
+  it('extracts file paths only from localfileimage URIs', () => {
+    expect(filePathFromImageUri('spotify:localfileimage:%2Fmusic%2Fa%20b.flac')).toBe('/music/a b.flac');
+    expect(filePathFromImageUri('spotify:image:abc')).toBeUndefined();
+    expect(filePathFromImageUri(undefined)).toBeUndefined();
   });
   it('falls back to the URI when fields are missing', () => {
     const t = mapLocalTrack({ uri: 'spotify:local:Artist:Album:Title:180' }, 0);

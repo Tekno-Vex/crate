@@ -31,11 +31,36 @@ const history = {
 };
 const played = [];
 const menuItems = [];
+// Same shape LocalFilesAPI.getTracks() returns on Spotify 1.3.5.3058 (spike S1, 2026-10-20):
+// discNumber/trackNumber always numbers (0 = untagged), addedAt a Date, cover URI = file path.
+const rawTrack = (uri, name, album, artists, trackNumber, sec) => ({
+  type: 'track',
+  uid: uri,
+  addedAt: new Date('2026-09-03T16:54:24.000Z'),
+  uri,
+  name,
+  album: {
+    type: 'album',
+    uri: uri.split(':').slice(0, 4).join(':'),
+    name: album,
+    artist: { type: 'artist', uri: 'spotify:local:' + encodeURIComponent(artists[0]), name: artists[0] },
+    images: [{ url: 'spotify:localfileimage:' + encodeURIComponent('/music/' + album + '/' + name + '.mp3'), label: 'standard' }],
+  },
+  artists: artists.map((n) => ({ type: 'artist', uri: 'spotify:local:' + encodeURIComponent(n), name: n })),
+  discNumber: 0,
+  trackNumber,
+  duration: { milliseconds: sec * 1000 },
+  isExplicit: false,
+  isLocal: true,
+  isPlayable: true,
+  is19PlusOnly: false,
+  isBanned: false,
+});
 const rawTracks = [
-  { uri: 'spotify:local:Artist+A:Box+%28Disc+2%29:Third:200', name: 'Third', album: { name: 'Box (Disc 2)' }, artists: [{ name: 'Artist A' }], duration: { milliseconds: 200000 } },
-  { uri: 'spotify:local:Artist+A:Box+%28Disc+1%29:First:100', name: 'First', album: { name: 'Box (Disc 1)' }, artists: [{ name: 'Artist A' }], duration: { milliseconds: 100000 } },
-  { uri: 'spotify:local:Artist+A%2C+Guest:Box+%28Disc+1%29:Second:150', name: 'Second', album: { name: 'Box (Disc 1)' }, artists: [{ name: 'Artist A' }, { name: 'Guest' }], duration: { milliseconds: 150000 } },
-  { uri: 'spotify:local:Solo:Other:Song:180', name: 'Song', album: { name: 'Other' }, artists: [{ name: 'Solo' }], duration: { milliseconds: 180000 } },
+  rawTrack('spotify:local:Artist+A:Box+%28Disc+2%29:Third:200', 'Third', 'Box (Disc 2)', ['Artist A'], 1, 200),
+  rawTrack('spotify:local:Artist+A:Box+%28Disc+1%29:First:100', 'First', 'Box (Disc 1)', ['Artist A'], 1, 100),
+  rawTrack('spotify:local:Artist+A%2C+Guest:Box+%28Disc+1%29:Second:150', 'Second', 'Box (Disc 1)', ['Artist A', 'Guest'], 2, 150),
+  rawTrack('spotify:local:Solo:Other:Song:180', 'Song', 'Other', ['Solo'], 0, 180),
 ];
 w.Spicetify = {
   React,
