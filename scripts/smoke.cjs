@@ -9,7 +9,9 @@ const ReactDOMClient = require('react-dom/client');
 const { act } = require('react');
 
 const dist = process.argv[2] ?? path.join(__dirname, '..', 'dist', 'crate');
-const dom = new JSDOM('<!doctype html><html><head></head><body><div id="root"></div></body></html>', {
+// Top bar shape verified on 1.3.5 (2026-10-20): the color is an inline --background-base on a layer
+// inside header[data-testid=topbar]; here it starts with Liked Songs' purple, as seen live.
+const dom = new JSDOM('<!doctype html><html><head></head><body><div id="main-view" style="background-color: rgb(18, 18, 18)"><header data-testid="topbar"><div class="layer" style="opacity: 1; --background-base: #5038a0"></div></header><div id="root"></div></div></body></html>', {
   runScripts: 'outside-only',
   pretendToBeVisual: true,
 });
@@ -129,7 +131,7 @@ w.HTMLCanvasElement.prototype.getContext = () => ({
     data: Uint8ClampedArray.from({ length: wd * ht * 4 }, (_, i) => [230, 120, 40, 255][i % 4]),
   }),
 });
-for (const k of ['window', 'document', 'navigator', 'HTMLElement', 'Node', 'performance', 'Image']) {
+for (const k of ['window', 'document', 'navigator', 'HTMLElement', 'Node', 'performance', 'Image', 'getComputedStyle', 'MutationObserver']) {
   if (!(k in globalThis) || k === 'window' || k === 'document') globalThis[k] = k === 'window' ? w : w[k];
 }
 
@@ -163,6 +165,9 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   console.log('album page title:', w.document.querySelector('.crate-album__title')?.textContent, '| artist line:', w.document.querySelector('.crate-album__line')?.textContent);
   console.log('tracks:', rows, 'discs:', discs);
   const tint = w.document.querySelector('.crate-album')?.getAttribute('style');
+  const topBar = () => w.document.querySelector('[data-testid="topbar"] .layer').style.getPropertyValue('--background-base');
+  const albumTopBar = topBar();
+  console.log('top bar on album page:', albumTopBar);
   console.log('tint:', tint);
   console.log('now-playing row:', w.document.querySelector('.crate-track.is-playing .crate-track__title')?.textContent);
 
@@ -170,6 +175,9 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   await act(async () => new Promise((r) => setTimeout(r, 20)));
   console.log('played:', JSON.stringify(played));
 
+  await act(async () => history.push('/crate'));
+  const albumsTopBar = topBar();
+  console.log('top bar on albums page:', albumsTopBar);
   await act(async () => history.push('/crate/diagnostics'));
   const btn = [...w.document.querySelectorAll('button')].find((b) => b.textContent === 'Probe local files');
   await act(async () => btn.dispatchEvent(new w.MouseEvent('click', { bubbles: true })));
@@ -185,6 +193,8 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   assert.deepEqual(rows, ['First', 'Second', 'Third'], 'disc/track order + "(Disc N)" merge');
   assert.deepEqual(discs, ['Disc 1', 'Disc 2']);
   assert.match(tint ?? '', /--crate-tint: #[0-9a-f]{6}/, 'header tint from canvas fallback (S7)');
+  assert.equal(albumTopBar, /--crate-tint: (#[0-9a-f]{6})/.exec(tint)[1], 'album page paints the top bar with its tint');
+  assert.equal(albumsTopBar, 'rgb(18, 18, 18)', 'other pages paint the top bar with the main-view background');
   // S3 round 1: playUri ignores local URIs on 1.3.5, so albums play as a local-files context.
   assert.equal(played[0][0], 'play');
   assert.equal(played[0][1], 'spotify:internal:local-files');

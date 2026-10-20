@@ -112,5 +112,7 @@ auto-discover folders; if not, the helper asks the user once.
   temporarily wrap `_emitter.emit` in Diagnostics to record emitted names while a file changes.
 - Spotify's main-view top bar keeps the last native page's color on custom-app routes (purple after
   Liked Songs, black otherwise). Point sampling (`elementsFromPoint`) can't see it (pointer-events
-  none). Crate now finds it structurally (full-width absolute element pinned to `#main-view` top)
-  and paints it — UNVERIFIED which element wins; Diagnostics → "Top bar" lists candidates.
+  none). Verified shape: `header[data-testid="topbar"]` > layer `div` whose color is an **inline CSS
+  variable** `--background-base: #5038a0` (opacity fades on scroll). Crate sets that variable — album
+  tint on album pages, `#main-view`'s computed background elsewhere — and re-applies via
+  MutationObserver if Spotify rewrites it. Smoke mock reproduces the shape.
