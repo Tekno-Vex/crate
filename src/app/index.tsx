@@ -1,0 +1,46 @@
+import { useEffect } from 'react';
+import { ensureStyles } from '../lib/style';
+import { Nav } from './components/Nav';
+import { ErrorState, Loading } from './components/States';
+import { AlbumPage } from './pages/AlbumPage';
+import { AlbumsPage } from './pages/AlbumsPage';
+import { DiagnosticsPage } from './pages/DiagnosticsPage';
+import { go, useRoute } from './routes';
+import { useLibrary } from './useLibrary';
+
+// Spicetify calls the global render() (appended by scripts/build.mjs), which mounts this.
+export default function App() {
+  useEffect(ensureStyles, []);
+  const route = useRoute();
+  const lib = useLibrary();
+
+  let body;
+  if (route.name === 'diagnostics') {
+    // Diagnostics must work even when the library can't load.
+    body = <DiagnosticsPage />;
+  } else if (lib.status === 'loading') {
+    body = <Loading />;
+  } else if (lib.status === 'error') {
+    body = <ErrorState error={lib.error} onRetry={lib.reload} />;
+  } else if (route.name === 'album') {
+    body = <AlbumPage library={lib.library} albumKey={route.key} />;
+  } else if (route.name === 'albums') {
+    body = <AlbumsPage library={lib.library} />;
+  } else {
+    body = (
+      <div className="crate-state">
+        <p>Unknown page: {route.path}</p>
+        <button type="button" className="crate-btn" onClick={go.albums}>
+          Go to albums
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="crate-root">
+      <Nav route={route} />
+      {body}
+    </div>
+  );
+}

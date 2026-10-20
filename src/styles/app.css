@@ -1,0 +1,325 @@
+/* Uses Spicetify/Spotify CSS variables so user themes apply. Fallbacks only where unavoidable. */
+
+.crate-root {
+  --crate-text: var(--spice-text, #fff);
+  --crate-subtext: var(--spice-subtext, #b3b3b3);
+  --crate-card: var(--spice-card, #181818);
+  --crate-highlight: var(--spice-highlight, rgba(255, 255, 255, 0.1));
+  --crate-button: var(--spice-button, #1ed760);
+  --crate-button-text: var(--spice-main, #000);
+  color: var(--crate-text);
+  padding: 16px 32px 64px;
+  min-height: 100%;
+}
+
+.crate-nav {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.crate-tab {
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 14px;
+  background: var(--crate-highlight);
+  color: var(--crate-text);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+.crate-tab.is-active {
+  background: var(--crate-text);
+  color: var(--crate-button-text);
+}
+
+.crate-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.crate-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.crate-h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 0;
+}
+.crate-spacer {
+  flex: 1;
+}
+.crate-muted {
+  color: var(--crate-subtext);
+}
+.crate-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.crate-right {
+  text-align: right;
+}
+.crate-note {
+  font-size: 0.8125rem;
+}
+
+.crate-input,
+.crate-select {
+  background: var(--crate-highlight);
+  color: var(--crate-text);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.875rem;
+}
+.crate-input {
+  min-width: 260px;
+}
+.crate-input:focus,
+.crate-select:focus {
+  outline: none;
+  border-color: var(--crate-subtext);
+}
+
+.crate-btn {
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 18px;
+  font-weight: 700;
+  font-size: 0.875rem;
+  background: var(--crate-text);
+  color: var(--crate-button-text);
+  cursor: pointer;
+}
+.crate-btn--ghost {
+  background: transparent;
+  color: var(--crate-text);
+  box-shadow: inset 0 0 0 1px var(--crate-subtext);
+}
+.crate-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ── Album grid ───────────────────────────── */
+.crate-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 24px;
+}
+.crate-card {
+  all: unset;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  content-visibility: auto;
+  contain-intrinsic-size: 180px 250px;
+  transition: background-color 0.2s;
+}
+.crate-card:hover,
+.crate-card:focus-visible {
+  background: var(--crate-card);
+}
+.crate-card__title {
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.crate-card__sub {
+  font-size: 0.8125rem;
+  color: var(--crate-subtext);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crate-cover {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+.crate-cover--empty {
+  display: grid;
+  place-items: center;
+  background: var(--crate-highlight);
+  color: var(--crate-subtext);
+}
+
+/* ── Album page ───────────────────────────── */
+.crate-album {
+  --crate-tint: var(--crate-highlight);
+  margin: -16px -32px 0;
+  padding: 0 32px;
+  background: linear-gradient(to bottom, var(--crate-tint) 0, transparent 420px);
+}
+.crate-album__header {
+  display: flex;
+  align-items: flex-end;
+  gap: 24px;
+  padding-top: 48px;
+}
+.crate-album__cover {
+  width: 232px !important;
+  height: 232px;
+  flex-shrink: 0;
+}
+.crate-album__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.crate-eyebrow {
+  font-size: 0.875rem;
+}
+.crate-album__title {
+  font-size: clamp(2rem, 5vw, 4.5rem);
+  font-weight: 900;
+  line-height: 1;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.crate-album__line {
+  font-size: 0.875rem;
+}
+.crate-album__actions {
+  padding: 16px 0;
+}
+.crate-play {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--crate-button);
+  color: #000;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.crate-play:hover {
+  transform: scale(1.05);
+}
+
+.crate-tracklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.crate-tracklist__head,
+.crate-track {
+  display: grid;
+  grid-template-columns: 40px 1fr 80px;
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px;
+  min-height: 56px;
+  border-radius: 4px;
+}
+.crate-tracklist__head {
+  min-height: 36px;
+  color: var(--crate-subtext);
+  font-size: 0.875rem;
+  border-bottom: 1px solid var(--crate-highlight);
+  margin-bottom: 8px;
+}
+.crate-track:hover {
+  background: var(--crate-highlight);
+}
+.crate-track.is-playing .crate-track__title,
+.crate-track.is-playing .crate-track__n {
+  color: var(--crate-button);
+}
+.crate-track__num {
+  position: relative;
+  color: var(--crate-subtext);
+  text-align: right;
+}
+.crate-track__play {
+  all: unset;
+  position: absolute;
+  inset: 0;
+  display: none;
+  text-align: right;
+  color: var(--crate-text);
+  cursor: pointer;
+}
+.crate-track:hover .crate-track__n {
+  visibility: hidden;
+}
+.crate-track:hover .crate-track__play {
+  display: block;
+}
+.crate-track__main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.crate-track__title,
+.crate-track__artists {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.crate-track__artists {
+  font-size: 0.875rem;
+  color: var(--crate-subtext);
+}
+.crate-disc {
+  padding: 16px 16px 8px;
+  font-weight: 700;
+  color: var(--crate-subtext);
+}
+
+/* ── States & diagnostics ─────────────────── */
+.crate-state {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 48px 0;
+  max-width: 640px;
+}
+.crate-diag__section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 16px;
+  background: var(--crate-card);
+  border-radius: 8px;
+}
+.crate-diag__section h2 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+.crate-badge {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--crate-highlight);
+  color: var(--crate-subtext);
+  vertical-align: middle;
+}
+.crate-pre {
+  width: 100%;
+  max-height: 420px;
+  overflow: auto;
+  margin: 0;
+  padding: 12px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  font-size: 0.75rem;
+  white-space: pre;
+  user-select: text;
+}
