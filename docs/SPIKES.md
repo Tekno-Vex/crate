@@ -125,3 +125,16 @@ auto-discover folders; if not, the helper asks the user once.
 - Shuffle (S3 follow-up, 2026-10-20): `PlayerAPI.setShuffle(bool)` toggles global shuffle (player bar
   follows); `Player.data.shuffle` is a boolean; shuffled playback of our album context stays inside the
   album. No verified shuffle-changed event — Crate polls `Player.data.shuffle` (500 ms) on album pages.
+
+### Context-menu injection on 1.3.5 — 2026-10-20 (Spotify 1.3.5.3058, Spicetify 2.45.3)
+
+- **`Spicetify.ContextMenu.Item` breaks native menus for the tracks it applies to.** With "Go to
+  album (Crate)" registered (shouldAdd = single local track), right-click and ⋯ on a local track in a
+  native playlist open nothing, and the item never renders. Deregistered live → the native menu
+  works again (incl. "Remove from this playlist"). Not a throw in our callbacks (hardened; still
+  broke). Likely Spicetify 2.45.x's menu patch vs Spotify 1.3.5 (newer than its supported 1.3.1).
+  → Item is **off by default** (Diagnostics opt-in). M2: check `ContextMenuV2` (Diagnostics → "Spicetify
+  menu APIs"), re-test after Spicetify updates.
+- Spotify's **Local Files page**: right-click on local tracks does not open **even with our item off**
+  — separate cause, not yet known (pre-existing? `full-queue-clear`? theme?). Crate's own album pages
+  use `ReactComponent.TrackMenu` directly and work.

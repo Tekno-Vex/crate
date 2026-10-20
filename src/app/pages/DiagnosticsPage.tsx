@@ -8,6 +8,7 @@ import {
   copyToClipboard,
   describeApi,
   describeLocalFilesEvents,
+  describeMenuApis,
   describeScrollParent,
   describeTopBar,
   getLocalSourcesRaw,
@@ -276,6 +277,11 @@ export function DiagnosticsPage() {
         <Json value={{ store: report.libraryStore, events: report.localFilesEvents, scrollParent: describeScrollParent(document.querySelector('.crate-root')) }} />
       </Section>
 
+      <Section title="Spicetify menu APIs" spike="M2">
+        <p className="crate-muted">What this Spicetify exposes for adding items to Spotify's menus.</p>
+        <Json value={describeMenuApis()} />
+      </Section>
+
       <Section title="Local files API" spike="S1">
         <p className="crate-muted">
           Reads every local track, inventories the fields Spotify exposes, and checks whether track/disc
@@ -328,8 +334,8 @@ export function DiagnosticsPage() {
 
       <Section title="Crate's right-click item">
         <p className="crate-muted">
-          Crate adds "Go to album (Crate)" to Spotify's menu for local tracks. If right-click on local
-          tracks stops working elsewhere in Spotify, turn this off — it applies immediately.
+          Experimental, off by default: on Spotify 1.3.5 adding "Go to album (Crate)" to Spotify's menu
+          stops right-click from opening on local tracks in playlists. Applies immediately.
         </p>
         <button
           type="button"

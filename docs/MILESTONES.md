@@ -35,6 +35,7 @@ Tick items as they land (same commit). Each milestone ends shippable.
 ## M2 — Everywhere + smart grouping (v0.2)
 
 - [ ] Verify "Go to album (Crate)" on 1.3.x; add it to the album-name link in track rows
+  (2026-10-20: ContextMenu.Item breaks native local-track menus on 1.3.5 → shipped OFF; try ContextMenuV2)
 - [ ] Extension: now-playing album click → Crate album page for local tracks
 - [ ] Multi-select (shift/ctrl), add to queue / playlist
 - [ ] Cover perceptual hash (dHash) in a worker; merge/split same-name albums by art; cached

@@ -458,6 +458,17 @@ export function listReactComponents(): string[] {
 
 // ───────────────────────── context menu ─────────────────────────
 
+/** Diagnostics: Spicetify's menu-extension APIs on this version (ContextMenu, ContextMenuV2, …). */
+export function describeMenuApis(): Record<string, string[]> {
+  const s = S() ?? {};
+  const out: Record<string, string[]> = {};
+  for (const name of Object.keys(s).filter((k) => /menu/i.test(k))) {
+    const v = s[name];
+    out[name] = v && (typeof v === 'object' || typeof v === 'function') ? Object.keys(v).sort() : [typeof v];
+  }
+  return out;
+}
+
 export function registerTrackMenuItem(
   label: string,
   shouldAdd: (uris: string[]) => boolean,

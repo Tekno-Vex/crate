@@ -166,7 +166,10 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   // Extension
   run('extension.js');
   await new Promise((r) => setTimeout(r, 300));
-  console.log('extension menu items:', menuItems.map((m) => m.name));
+  const startupMenuItems = menuItems.length;
+  // Off by default — turn it on through the same event the Diagnostics switch sends.
+  w.dispatchEvent(new w.CustomEvent('crate:track-menu-item', { detail: true }));
+  console.log('extension menu items: at startup', startupMenuItems, '→ after switch on', menuItems.map((m) => m.name));
   const item = menuItems[0];
   console.log('  shouldAdd(local):', item.shouldAdd([rawTracks[0].uri]), ' shouldAdd(catalog):', item.shouldAdd(['spotify:track:x']));
   item.onClick([rawTracks[0].uri]);
@@ -252,12 +255,11 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   console.log('diagnostics S1:', { rawCount: s1.rawCount, albumCount: s1.albumCount, fields: Object.keys(s1.fieldInventory).length });
 
   const assert = require('node:assert/strict');
-  // Diagnostics switch: off deregisters live, on registers again.
+  // Off by default (breaks native local-track menus on 1.3.5); the Diagnostics switch toggles it live.
+  assert.equal(startupMenuItems, 0, 'menu item is not registered by default');
+  assert.deepEqual(menuItems.map((m) => m.name), ['Go to album (Crate)'], 'switch on registers it');
   w.dispatchEvent(new w.CustomEvent('crate:track-menu-item', { detail: false }));
-  const afterOff = menuItems.length;
-  w.dispatchEvent(new w.CustomEvent('crate:track-menu-item', { detail: true }));
-  assert.equal(afterOff, 0, 'switch off removes the menu item');
-  assert.deepEqual(menuItems.map((m) => m.name), ['Go to album (Crate)']);
+  assert.equal(menuItems.length, 0, 'switch off removes it again');
   assert.equal(item.shouldAdd(['spotify:track:x']), false);
   assert.ok(w.document.getElementById('crate-styles'), 'styles injected');
   assert.deepEqual(rows, ['First', 'Second', 'Third'], 'disc/track order + "(Disc N)" merge');
