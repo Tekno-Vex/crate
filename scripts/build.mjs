@@ -21,7 +21,9 @@ const { appId, displayName } = pkg.spicetify;
 const watch = process.argv.includes('--watch');
 const install = process.argv.includes('--install');
 const dev = watch;
-const outDir = path.join(root, 'dist', appId);
+// The dev watcher gets its own folder: `npm run check` wipes and rebuilds dist/ while the watcher
+// is running, and sharing one folder meant Spotify sometimes got a stale build (2026-10-20).
+const outDir = path.join(root, watch ? 'dist-dev' : 'dist', appId);
 const globalName = `__${appId.replace(/[^a-zA-Z0-9_]/g, '_')}_app`;
 
 /** Resolve React imports to our lazy shims over Spicetify.React. */
@@ -43,15 +45,14 @@ const reactShims = {
   },
 };
 
-// App and extension builds finish together; installApp() does rm + cp of the whole folder, so
-// concurrent calls race (ENOENT). Coalesce bursts into one install, and never run two at once.
+// App and extension builds finish together; coalesce bursts into one install, never two at once.
 let installTimer;
 let installing = Promise.resolve();
 function scheduleInstall() {
   clearTimeout(installTimer);
   installTimer = setTimeout(() => {
     installing = installing
-      .then(() => installApp({ quiet: true }))
+      .then(() => installApp({ quiet: true, from: outDir }))
       .catch((e) => console.error(`  install failed: ${e.message}`));
   }, 150);
 }

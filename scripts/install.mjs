@@ -38,10 +38,10 @@ export async function findSpicetifyDir() {
   return path.join(os.homedir(), '.config', 'spicetify');
 }
 
-export async function installApp({ quiet = false } = {}) {
+export async function installApp({ quiet = false, from } = {}) {
   const pkg = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
   const { appId } = pkg.spicetify;
-  const src = path.join(root, 'dist', appId);
+  const src = from ?? path.join(root, 'dist', appId);
   if (!(await exists(path.join(src, 'index.js')))) {
     throw new Error(`No build found at ${src}. Run "npm run build" first.`);
   }
