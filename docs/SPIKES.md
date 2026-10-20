@@ -133,8 +133,13 @@ auto-discover folders; if not, the helper asks the user once.
   native playlist open nothing, and the item never renders. Deregistered live → the native menu
   works again (incl. "Remove from this playlist"). Not a throw in our callbacks (hardened; still
   broke). Likely Spicetify 2.45.x's menu patch vs Spotify 1.3.5 (newer than its supported 1.3.1).
-  → Item is **off by default** (Diagnostics opt-in). M2: check `ContextMenuV2` (Diagnostics → "Spicetify
-  menu APIs"), re-test after Spicetify updates.
+  → Item is **off by default** (Diagnostics opt-in). Re-test after Spicetify updates.
+- Menu APIs present on 2.45.3 (Diagnostics → "Spicetify menu APIs"): `ContextMenu {Item, SubMenu}`,
+  `Menu {Item, SubMenu}`, and **`ContextMenuV2 {Item, ItemSubMenu, registerItem, unregisterItem,
+  renderItems, parseProps, _context}`**. M2: try registering via ContextMenuV2 (props/signature
+  UNVERIFIED — read spicetify-cli's wrapper source for this version first), behind the same opt-in.
+- Verified live after the fix: native playlist right-click/⋯ on local tracks works with the item off;
+  Crate track rows highlight on click (color-mix fix).
 - Spotify's **Local Files page**: right-click on local tracks does not open **even with our item off**
   — separate cause, not yet known (pre-existing? `full-queue-clear`? theme?). Crate's own album pages
   use `ReactComponent.TrackMenu` directly and work.
