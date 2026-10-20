@@ -29,6 +29,8 @@ Turn on DevTools once, so you can inspect things: `spicetify enable-devtools`.
 
 - Terminal A: `npm run dev` (rebuilds and re-copies on every save)
 - Terminal B: `spicetify watch -a -l` (re-applies custom apps + live reload)
+- If you quit/restart Spotify, terminal B's `spicetify watch` usually exits with it — start it
+  again, or Spotify keeps running the last applied build. (Terminal A keeps working either way.)
 
 ## 4. Start Claude Code
 
