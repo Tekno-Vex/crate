@@ -21,7 +21,8 @@ Tick items as they land (same commit). Each milestone ends shippable.
   rounding — deferred to M4 where URI migration needs them)
 - [x] Library store: load once, IndexedDB cache, diff on rescan, subscribe hooks
   (rescans on open/focus; Spotify change-event names UNVERIFIED — Diagnostics shows them)
-- [ ] Albums grid: virtualized, search/sort, persisted scroll/search/sort
+- [x] Albums grid: virtualized, search/sort, persisted scroll/search/sort
+  (search + scroll per session, sort across restarts; virtualizes against Spotify's scroll container)
 - [ ] Album page: tinted header, Spotify-style tracklist, Play/Shuffle via verified context (S3)
 - [ ] Track row: hover play, double-click play, right-click → native track context menu
 - [ ] Artists view + artist → albums

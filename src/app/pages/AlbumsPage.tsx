@@ -1,41 +1,47 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type { Album, Library } from '../../domain/model';
 import { normalizeText } from '../../domain/normalize';
 import { pluralize } from '../../domain/format';
 import { Cover } from '../components/Cover';
 import { Empty } from '../components/States';
+import { VirtualGrid } from '../components/VirtualGrid';
+import { useUiState } from '../useUiState';
 import { go } from '../routes';
 
 type SortKey = 'title' | 'artist' | 'tracks' | 'recent';
 
-const SORTS: Record<SortKey, { label: string; cmp: (a: Album, b: Album) => number }> = {
+/** Latest addedAt per album, computed once per library rather than inside every comparison. */
+const lastAdded = (a: Album) => a.tracks.reduce((max, t) => Math.max(max, t.addedAt ?? 0), 0);
+
+const SORTS: Record<SortKey, { label: string; cmp: (a: Album, b: Album, added: Map<Album, number>) => number }> = {
   title: { label: 'Album', cmp: (a, b) => a.title.localeCompare(b.title) },
   artist: {
     label: 'Artist',
     cmp: (a, b) => a.albumArtist.localeCompare(b.albumArtist) || a.title.localeCompare(b.title),
   },
   tracks: { label: 'Track count', cmp: (a, b) => b.tracks.length - a.tracks.length },
-  recent: {
-    label: 'Recently added',
-    cmp: (a, b) =>
-      Math.max(...b.tracks.map((t) => t.addedAt ?? 0)) - Math.max(...a.tracks.map((t) => t.addedAt ?? 0)),
-  },
+  recent: { label: 'Recently added', cmp: (a, b, added) => added.get(b)! - added.get(a)! || a.title.localeCompare(b.title) },
 };
 
-// TODO(M1): virtualize the grid and persist search/sort/scroll per view (IndexedDB uiState).
+const isSortKey = (v: unknown): v is SortKey => typeof v === 'string' && v in SORTS;
+
 export function AlbumsPage({ library }: { library: Library }) {
-  const [query, setQuery] = useState('');
-  const [sort, setSort] = useState<SortKey>('artist');
+  // Search + scroll survive navigation; sort also survives a Spotify restart.
+  const [query, setQuery] = useUiState('albums.query', '');
+  const [storedSort, setSort] = useUiState<string>('albums.sort', 'artist', true);
+  const sort: SortKey = isSortKey(storedSort) ? storedSort : 'artist';
+
+  const searchIndex = useMemo(
+    () => new Map(library.albums.map((a) => [a, normalizeText(`${a.title} ${a.albumArtist} ${a.artists.join(' ')}`)])),
+    [library],
+  );
+  const added = useMemo(() => new Map(library.albums.map((a) => [a, lastAdded(a)])), [library]);
 
   const albums = useMemo(() => {
     const q = normalizeText(query);
-    const filtered = q
-      ? library.albums.filter((a) =>
-          normalizeText(`${a.title} ${a.albumArtist} ${a.artists.join(' ')}`).includes(q),
-        )
-      : library.albums;
-    return [...filtered].sort(SORTS[sort].cmp);
-  }, [library, query, sort]);
+    const filtered = q ? library.albums.filter((a) => searchIndex.get(a)!.includes(q)) : library.albums;
+    return [...filtered].sort((a, b) => SORTS[sort].cmp(a, b, added));
+  }, [library, searchIndex, added, query, sort]);
 
   if (library.tracks.length === 0) {
     return (
@@ -71,19 +77,27 @@ export function AlbumsPage({ library }: { library: Library }) {
         </select>
       </header>
 
-      <div className="crate-grid">
-        {albums.map((album) => (
-          <button key={album.key} type="button" className="crate-card" onClick={() => go.album(album.key)}>
-            <Cover src={album.imageUrl} alt={album.title} />
-            <div className="crate-card__title" title={album.title}>
-              {album.title}
-            </div>
-            <div className="crate-card__sub" title={album.albumArtist}>
-              {album.albumArtist}
-            </div>
-          </button>
-        ))}
-      </div>
+      {albums.length === 0 ? (
+        <p className="crate-muted">No albums match "{query}".</p>
+      ) : (
+        <VirtualGrid
+          items={albums}
+          getKey={(a) => a.key}
+          scrollKey="albums"
+          resetScrollOn={`${sort}:${query}`}
+          renderItem={(album) => (
+            <button type="button" className="crate-card" onClick={() => go.album(album.key)}>
+              <Cover src={album.imageUrl} alt={album.title} />
+              <div className="crate-card__title" title={album.title}>
+                {album.title}
+              </div>
+              <div className="crate-card__sub" title={album.albumArtist}>
+                {album.albumArtist}
+              </div>
+            </button>
+          )}
+        />
+      )}
     </section>
   );
 }

@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Album, Library, Track } from '../../domain/model';
 import { formatAlbumDuration, formatTrackDuration, pluralize } from '../../domain/format';
 import { hasReliableNumbering } from '../../domain/ordering';
-import { getCurrentTrackUri, headerColor, notify, onSongChange, playTracks } from '../../platform';
+import { findScrollParent, getCurrentTrackUri, headerColor, notify, onSongChange, playTracks } from '../../platform';
 import { Cover } from '../components/Cover';
 import { libraryStore } from '../libraryStore';
 import { NEUTRAL_TOP_BAR, useTopBarColor } from '../useTopBarColor';
@@ -40,6 +40,12 @@ export function AlbumPage({ library, albumKey }: { library: Library; albumKey: s
   const album = library.albumsByKey.get(albumKey);
   const color = useHeaderColor(album);
   useTopBarColor(color ?? NEUTRAL_TOP_BAR);
+  // Spotify's scroll container is shared across pages — open every album at the top.
+  const pageRef = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const scroller = findScrollParent(pageRef.current);
+    if (scroller) scroller.scrollTop = 0;
+  }, [albumKey]);
   const nowPlaying = useNowPlaying();
 
   if (!album) {
@@ -70,7 +76,7 @@ export function AlbumPage({ library, albumKey }: { library: Library; albumKey: s
   });
 
   return (
-    <section className="crate-page crate-album" style={color ? { ['--crate-tint' as string]: color } : undefined}>
+    <section ref={pageRef} className="crate-page crate-album" style={color ? { ['--crate-tint' as string]: color } : undefined}>
       <header className="crate-album__header">
         <Cover src={album.imageUrl} alt={album.title} className="crate-album__cover" />
         <div className="crate-album__meta">

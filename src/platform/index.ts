@@ -440,3 +440,7 @@ export function registerTrackMenuItem(
 // ───────────────────────── top bar ─────────────────────────
 
 export { describeTopBar, setTopBarColor } from './topBar';
+
+// ───────────────────────── scrolling ─────────────────────────
+
+export { describeScrollParent, findScrollParent } from './ui';

@@ -5,8 +5,10 @@ const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
 const React = require('react');
-const ReactDOMClient = require('react-dom/client');
 const { act } = require('react');
+// react-dom is required only after jsdom's window/document are global (below): it decides at load
+// time whether the DOM supports the `input` event, and without a DOM it silently ignores typing.
+let ReactDOMClient;
 
 const dist = process.argv[2] ?? path.join(__dirname, '..', 'dist', 'crate');
 // Top bar shape verified on 1.3.5 (2026-10-20): the color is an inline --background-base on a layer
@@ -18,6 +20,9 @@ const dom = new JSDOM('<!doctype html><html><head></head><body><div id="main-vie
 const w = dom.window;
 w.IS_REACT_ACT_ENVIRONMENT = true;
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+globalThis.window = w;
+globalThis.document = w.document;
+ReactDOMClient = require('react-dom/client');
 
 const listeners = [];
 const history = {
@@ -157,6 +162,22 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   const text = () => w.document.getElementById('root').textContent;
   console.log('styles injected:', !!w.document.getElementById('crate-styles'));
   console.log('albums page:', text().slice(0, 160));
+  const cards = () => [...w.document.querySelectorAll('.crate-card__title')].map((e) => e.textContent);
+  const search = () => w.document.querySelector('.crate-input');
+  const allCards = cards();
+  // Type into the controlled search input the way React expects.
+  const setInput = (el, value) => {
+    Object.getOwnPropertyDescriptor(w.HTMLInputElement.prototype, 'value').set.call(el, value);
+    el.dispatchEvent(new w.Event('input', { bubbles: true }));
+  };
+  await act(async () => setInput(search(), 'solo'));
+  const filteredCards = cards();
+  await act(async () => history.push('/crate/album/other'));
+  await act(async () => history.push('/crate'));
+  const searchAfterNav = search()?.value;
+  const cardsAfterNav = cards();
+  console.log('cards:', allCards, '→ search "solo":', filteredCards, '→ after album and back:', searchAfterNav, cardsAfterNav);
+  await act(async () => setInput(search(), ''));
 
   await act(async () => history.push('/crate/album/box'));
   await act(async () => new Promise((r) => setTimeout(r, 50)));
@@ -192,6 +213,10 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   assert.ok(w.document.getElementById('crate-styles'), 'styles injected');
   assert.deepEqual(rows, ['First', 'Second', 'Third'], 'disc/track order + "(Disc N)" merge');
   assert.deepEqual(discs, ['Disc 1', 'Disc 2']);
+  assert.deepEqual(allCards, ['Box', 'Other'], 'albums grid renders every album (static mode without layout)');
+  assert.deepEqual(filteredCards, ['Other'], 'search filters by artist');
+  assert.equal(searchAfterNav, 'solo', 'search survives navigating to an album and back');
+  assert.deepEqual(cardsAfterNav, ['Other']);
   assert.match(tint ?? '', /--crate-tint: #[0-9a-f]{6}/, 'header tint from canvas fallback (S7)');
   assert.equal(albumTopBar, /--crate-tint: (#[0-9a-f]{6})/.exec(tint)[1], 'album page paints the top bar with its tint');
   assert.equal(albumsTopBar, 'rgb(18, 18, 18)', 'other pages paint the top bar with the main-view background');

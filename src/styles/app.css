@@ -126,14 +126,27 @@
 .crate-card:focus-visible {
   background: var(--crate-card);
 }
+/* Virtualized grid: rows are absolutely positioned; heights come from domain/virtualGrid.ts, which
+   assumes card = column width + 56px (padding 12×2, gaps 6×2, title 24, subtitle 20). */
+.crate-vgrid {
+  position: relative;
+}
+.crate-vgrid__row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: grid;
+}
 .crate-card__title {
   font-weight: 700;
+  line-height: 24px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .crate-card__sub {
   font-size: 0.8125rem;
+  line-height: 20px;
   color: var(--crate-subtext);
   white-space: nowrap;
   overflow: hidden;

@@ -8,6 +8,7 @@ import {
   copyToClipboard,
   describeApi,
   describeLocalFilesEvents,
+  describeScrollParent,
   describeTopBar,
   getLocalSourcesRaw,
   extractColors,
@@ -267,10 +268,10 @@ export function DiagnosticsPage() {
 
       <Section title="Library store + change events">
         <p className="crate-muted">
-          Where the library came from (cache or live scan), and the event names Spotify's own UI listens
-          to for local-file changes.
+          Where the library came from (cache or live scan), the event names Spotify's own UI listens
+          to for local-file changes, and the scroll container the album grid virtualizes against.
         </p>
-        <Json value={{ store: report.libraryStore, events: report.localFilesEvents }} />
+        <Json value={{ store: report.libraryStore, events: report.localFilesEvents, scrollParent: describeScrollParent(document.querySelector('.crate-root')) }} />
       </Section>
 
       <Section title="Local files API" spike="S1">
