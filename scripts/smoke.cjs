@@ -60,7 +60,14 @@ w.Spicetify = {
   },
   Platform: {
     History: history,
-    PlatformData: { client_version_triple: '1.3.1', os_name: 'windows' },
+    // Real shape on Spotify 1.3.5.3058 / Windows (2026-10-20). Version comes from the user agent.
+    PlatformData: {
+      os_version: '10.0.26300',
+      app_platform: 'Win32_x86_64',
+      client_variant: 'windows_classic',
+      is_developer_mode: true,
+      remote_config_client_id: 'desktop-ui',
+    },
     LocalFilesAPI: { getTracks: async () => rawTracks },
     PlayerAPI: { addToQueue: async (items) => played.push(['queue', items.map((i) => i.uri)]), play: async () => {} },
     ClipboardAPI: { copy: async () => {} },

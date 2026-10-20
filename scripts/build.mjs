@@ -43,6 +43,19 @@ const reactShims = {
   },
 };
 
+// App and extension builds finish together; installApp() does rm + cp of the whole folder, so
+// concurrent calls race (ENOENT). Coalesce bursts into one install, and never run two at once.
+let installTimer;
+let installing = Promise.resolve();
+function scheduleInstall() {
+  clearTimeout(installTimer);
+  installTimer = setTimeout(() => {
+    installing = installing
+      .then(() => installApp({ quiet: true }))
+      .catch((e) => console.error(`  install failed: ${e.message}`));
+  }, 150);
+}
+
 /** Writes manifest.json and optionally installs after each successful build. */
 const afterBuild = (label) => ({
   name: `after-build-${label}`,
@@ -54,13 +67,7 @@ const afterBuild = (label) => ({
       }
       await writeManifest();
       console.log(`✓ ${label} built → ${path.relative(root, outDir)}`);
-      if (install) {
-        try {
-          await installApp({ quiet: true });
-        } catch (e) {
-          console.error(`  install failed: ${e.message}`);
-        }
-      }
+      if (install) scheduleInstall();
     });
   },
 });

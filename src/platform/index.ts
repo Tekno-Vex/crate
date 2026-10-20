@@ -48,11 +48,20 @@ export interface Versions {
   platformData?: Record<string, string | number | boolean>;
 }
 
+function osFromPlatform(p: unknown): string | undefined {
+  if (typeof p !== 'string') return undefined;
+  if (p.startsWith('Win')) return 'windows';
+  if (p.startsWith('OSX') || p.startsWith('Mac')) return 'macos';
+  if (p.startsWith('Linux')) return 'linux';
+  return undefined;
+}
+
 export function getVersions(): Versions {
   const s = S();
   const pd = s?.Platform?.PlatformData ?? {};
-  // UNVERIFIED (spike S1): on 1.3.5 client_version_* / os_name came back empty; the CEF
-  // user agent carries "Spotify/<version>" so use it as a fallback.
+  // Verified 2026-10-20 on 1.3.5.3058 (Windows): PlatformData only has os_version, app_platform,
+  // client_variant, is_developer_mode, remote_config_client_id — no client_version_* / os_name.
+  // The CEF user agent carries "Spotify/<version>", so use it as the fallback.
   const uaVersion = /Spotify\/([\d.]+)/.exec(globalThis.navigator?.userAgent ?? '')?.[1];
   const platformData: Record<string, string | number | boolean> = {};
   for (const [k, v] of Object.entries(pd)) {
@@ -62,7 +71,7 @@ export function getVersions(): Versions {
     app: __APP_VERSION__,
     spotify: pd.client_version_quadruple ?? pd.client_version_triple ?? uaVersion,
     spicetify: s?.Config?.version,
-    os: pd.os_name,
+    os: pd.os_name ?? osFromPlatform(pd.app_platform),
     osVersion: pd.os_version,
     platform: pd.app_platform,
     platformData,
