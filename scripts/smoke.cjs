@@ -96,7 +96,7 @@ w.Spicetify = {
         Object.assign(this, { name, onClick, shouldAdd });
       }
       register() { menuItems.push(this); }
-      deregister() {}
+      deregister() { menuItems.splice(menuItems.indexOf(this), 1); }
     },
   },
   Player: {
@@ -252,6 +252,11 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   console.log('diagnostics S1:', { rawCount: s1.rawCount, albumCount: s1.albumCount, fields: Object.keys(s1.fieldInventory).length });
 
   const assert = require('node:assert/strict');
+  // Diagnostics switch: off deregisters live, on registers again.
+  w.dispatchEvent(new w.CustomEvent('crate:track-menu-item', { detail: false }));
+  const afterOff = menuItems.length;
+  w.dispatchEvent(new w.CustomEvent('crate:track-menu-item', { detail: true }));
+  assert.equal(afterOff, 0, 'switch off removes the menu item');
   assert.deepEqual(menuItems.map((m) => m.name), ['Go to album (Crate)']);
   assert.equal(item.shouldAdd(['spotify:track:x']), false);
   assert.ok(w.document.getElementById('crate-styles'), 'styles injected');

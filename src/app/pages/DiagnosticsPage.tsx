@@ -23,6 +23,7 @@ import {
   type PlayStrategy,
 } from '../../platform';
 import { fieldInventory, mapLocalTracks } from '../../platform/mapLocalTrack';
+import { isTrackMenuItemEnabled, setTrackMenuItemEnabled } from '../../lib/trackMenuSwitch';
 import { libraryStore } from '../libraryStore';
 import { probeHttp, probeWebSocket, type ReachabilityResult } from '../../platform/probes';
 
@@ -133,6 +134,7 @@ export function DiagnosticsPage() {
 
   const [report, setReport] = useState<Report>(() => ({ generatedAt: new Date().toISOString(), ...base }));
   const [busy, setBusy] = useState<string | null>(null);
+  const [menuItemOn, setMenuItemOn] = useState(isTrackMenuItemEnabled);
   const [sampleUris, setSampleUris] = useState<string[]>([]);
 
   const run = async (label: string, fn: () => Promise<void>) => {
@@ -322,6 +324,24 @@ export function DiagnosticsPage() {
           {busy === 's7' ? 'Testing…' : 'Test cover colors'}
         </button>
         {report.s7 !== undefined && <Json value={report.s7} />}
+      </Section>
+
+      <Section title="Crate's right-click item">
+        <p className="crate-muted">
+          Crate adds "Go to album (Crate)" to Spotify's menu for local tracks. If right-click on local
+          tracks stops working elsewhere in Spotify, turn this off — it applies immediately.
+        </p>
+        <button
+          type="button"
+          className="crate-btn"
+          onClick={() => {
+            const next = !menuItemOn;
+            setTrackMenuItemEnabled(next);
+            setMenuItemOn(next);
+          }}
+        >
+          {menuItemOn ? 'Turn off "Go to album (Crate)"' : 'Turn on "Go to album (Crate)"'}
+        </button>
       </Section>
 
       <Section title="Top bar">
