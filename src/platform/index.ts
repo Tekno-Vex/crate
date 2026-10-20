@@ -159,10 +159,10 @@ export type PlayStrategy = 'local-files-context' | 'app-context' | 'queue-fallba
 
 /**
  * Play an ordered list of URIs starting at `index`.
- * S3 round 1 (1.3.5, 2026-10-20): both context strategies play and Next/Prev work, and
- * local-files-context shows "Local Files" as the source. queue-fallback plays NOTHING
- * (Player.playUri ignores spotify:local: URIs). UNVERIFIED (spike S3): whether Spotify honours
- * our page order or substitutes its own Local Files order — round 2 plays a reversed list.
+ * Verified on 1.3.5 (spike S3, 2026-10-20): both context strategies play OUR page order (a
+ * reversed 3-2-1 list played 3 → 2 → 1), Next/Prev work, and local-files-context shows
+ * "Local Files" as the source. queue-fallback plays NOTHING (Player.playUri ignores
+ * spotify:local: URIs) — kept only for Diagnostics.
  */
 export async function playTracks(
   uris: string[],
@@ -196,35 +196,22 @@ export async function playTracks(
 }
 
 export interface PlayerSnapshot {
-  /** Every spotify: URI found in PlayerAPI.getState() / getQueue(), with its path, in order. */
-  state: { path: string; uri: string }[];
-  queue: { path: string; uri: string }[];
-  stateKeys: string[];
-  queueKeys: string[];
+  contextUri?: string;
+  current?: string;
+  /** Upcoming context tracks (PlayerAPI state.nextItems), first 5. */
+  next: string[];
+  previous: string[];
+  /** User-queued tracks (getQueue().queued), first 5. */
+  queued: string[];
 }
 
-/** Collect spotify: URIs from an object of unknown shape (bounded), keeping their paths. */
-function collectUris(root: unknown, limit = 40): { path: string; uri: string }[] {
-  const out: { path: string; uri: string }[] = [];
-  const seen = new Set<unknown>();
-  const walk = (v: unknown, path: string, depth: number) => {
-    if (out.length >= limit || depth > 6) return;
-    if (typeof v === 'string') {
-      if (v.startsWith('spotify:')) out.push({ path, uri: v });
-      return;
-    }
-    if (!v || typeof v !== 'object' || seen.has(v)) return;
-    seen.add(v);
-    if (Array.isArray(v)) v.slice(0, 10).forEach((x, i) => walk(x, `${path}[${i}]`, depth + 1));
-    else for (const [k, x] of Object.entries(v)) if (!k.startsWith('_')) walk(x, path ? `${path}.${k}` : k, depth + 1);
-  };
-  walk(root, '', 0);
-  return out;
-}
+const uris = (list: unknown, n = 5): string[] =>
+  Array.isArray(list) ? list.slice(0, n).map((x: any) => x?.uri).filter((u): u is string => typeof u === 'string') : [];
 
 /**
- * What the player thinks is playing and coming next. UNVERIFIED (spike S3): getState/getQueue
- * shapes, so this reports raw URI paths for Diagnostics rather than typed fields.
+ * What the player is playing and what comes next. Verified on 1.3.5 (spike S3, 2026-10-20):
+ * getState() → { context: { uri }, item: { uri }, nextItems[], previousItems[], index, shuffle, … };
+ * getQueue() → { current, queued[], nextUp[] }.
  */
 export async function getPlayerSnapshot(): Promise<Result<PlayerSnapshot>> {
   const api = S()?.Platform?.PlayerAPI;
@@ -233,10 +220,11 @@ export async function getPlayerSnapshot(): Promise<Result<PlayerSnapshot>> {
     const state = await api.getState();
     const queue = api.getQueue ? await api.getQueue() : undefined;
     return ok({
-      state: collectUris(state),
-      queue: collectUris(queue),
-      stateKeys: state && typeof state === 'object' ? Object.keys(state) : [],
-      queueKeys: queue && typeof queue === 'object' ? Object.keys(queue) : [],
+      contextUri: state?.context?.uri,
+      current: state?.item?.uri,
+      next: uris(state?.nextItems),
+      previous: uris(state?.previousItems),
+      queued: uris(queue?.queued),
     });
   } catch (e) {
     return fail('failed', 'PlayerAPI snapshot threw', String(e));
