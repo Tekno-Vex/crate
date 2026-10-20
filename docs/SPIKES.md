@@ -119,3 +119,9 @@ auto-discover folders; if not, the helper asks the user once.
 - Main-view scroll container (2026-10-20, 1.3.5): `findScrollParent(.crate-root)` → an unnamed `div`
   with `overflow-y: scroll` (clientHeight 868 at Vivek's window size). Virtual grid measures against
   it; scroll restore, search persistence and album-opens-at-top verified live.
+- Top bar after a fresh Spotify start: the color layer has **no** inline `--background-base` until a
+  native page sets one, so the bar showed black. Crate now falls back to the full-width absolutely
+  positioned element inside `header[data-testid="topbar"]` and sets the variable itself.
+- Shuffle (S3 follow-up, 2026-10-20): `PlayerAPI.setShuffle(bool)` toggles global shuffle (player bar
+  follows); `Player.data.shuffle` is a boolean; shuffled playback of our album context stays inside the
+  album. No verified shuffle-changed event — Crate polls `Player.data.shuffle` (500 ms) on album pages.

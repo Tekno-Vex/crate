@@ -16,14 +16,23 @@ function mainView(): HTMLElement | null {
   return document.getElementById('main-view') ?? document.querySelector<HTMLElement>('.main-view-container');
 }
 
-/** The layer Spotify colors via an inline `--background-base`, inside the topbar header. */
+/**
+ * The layer Spotify colors via an inline `--background-base`, inside the topbar header.
+ * Spotify only writes that variable once a native page with a color has been shown — after a fresh
+ * start it's absent (bar stays black, 2026-10-20). Then fall back to the layer's structure: the
+ * full-width, absolutely positioned element inside the header (same element, per 1.3.5 probe).
+ */
 function colorLayer(): HTMLElement | null {
   const bar = document.querySelector<HTMLElement>('[data-testid="topbar"]');
   if (!bar) return null;
-  for (const el of bar.querySelectorAll<HTMLElement>('*')) {
-    if (el.style.getPropertyValue(BG_VAR)) return el;
-  }
-  return null;
+  const all = [...bar.querySelectorAll<HTMLElement>('*')];
+  const tagged = all.find((el) => el.style.getPropertyValue(BG_VAR));
+  if (tagged) return tagged;
+  const width = bar.getBoundingClientRect().width;
+  return (
+    all.find((el) => getComputedStyle(el).position === 'absolute' && el.getBoundingClientRect().width >= width * 0.8) ??
+    null
+  );
 }
 
 /** The main view's own background — the "no page color" look, and theme-aware. */

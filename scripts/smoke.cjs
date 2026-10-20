@@ -12,8 +12,9 @@ let ReactDOMClient;
 
 const dist = process.argv[2] ?? path.join(__dirname, '..', 'dist', 'crate');
 // Top bar shape verified on 1.3.5 (2026-10-20): the color is an inline --background-base on a layer
-// inside header[data-testid=topbar]; here it starts with Liked Songs' purple, as seen live.
-const dom = new JSDOM('<!doctype html><html><head></head><body><div id="main-view" style="background-color: rgb(18, 18, 18)"><header data-testid="topbar"><div class="layer" style="opacity: 1; --background-base: #5038a0"></div></header><div id="root"></div></div></body></html>', {
+// inside header[data-testid=topbar]. It starts WITHOUT the variable (fresh Spotify start, no native
+// page visited yet); the purple Liked Songs case is set up after the albums page renders.
+const dom = new JSDOM('<!doctype html><html><head></head><body><div id="main-view" style="background-color: rgb(18, 18, 18)"><header data-testid="topbar"><div class="layer" style="position: absolute; opacity: 1"></div></header><div id="root"></div></div></body></html>', {
   runScripts: 'outside-only',
   pretendToBeVisual: true,
 });
@@ -185,6 +186,10 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   console.log('cards:', allCards, '→ search "solo":', filteredCards, '→ after album and back:', searchAfterNav, cardsAfterNav);
   await act(async () => setInput(search(), ''));
 
+  const layer = w.document.querySelector('[data-testid="topbar"] .layer');
+  const freshStartTopBar = layer.style.getPropertyValue('--background-base');
+  // Now simulate having visited Liked Songs before opening an album.
+  layer.style.setProperty('--background-base', '#5038a0');
   await act(async () => history.push('/crate/album/box'));
   await act(async () => new Promise((r) => setTimeout(r, 50)));
   const rows = [...w.document.querySelectorAll('.crate-track__title')].map((e) => e.textContent);
@@ -234,6 +239,7 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   assert.equal(searchAfterNav, 'solo', 'search survives navigating to an album and back');
   assert.deepEqual(cardsAfterNav, ['Other']);
   assert.match(tint ?? '', /--crate-tint: #[0-9a-f]{6}/, 'header tint from canvas fallback (S7)');
+  assert.equal(freshStartTopBar, 'rgb(18, 18, 18)', 'fresh start: layer found structurally and painted');
   assert.equal(albumTopBar, /--crate-tint: (#[0-9a-f]{6})/.exec(tint)[1], 'album page paints the top bar with its tint');
   assert.equal(albumsTopBar, 'rgb(18, 18, 18)', 'other pages paint the top bar with the main-view background');
   // S3 round 1: playUri ignores local URIs on 1.3.5, so albums play as a local-files context.

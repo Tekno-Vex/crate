@@ -292,8 +292,8 @@ export async function getPlayerSnapshot(): Promise<Result<PlayerSnapshot>> {
 }
 
 /**
- * Current shuffle mode. S3 verified PlayerAPI.getState() has a `shuffle` key on 1.3.5; Player.data
- * mirrors that state synchronously. UNVERIFIED (spike S3): the value is a plain boolean.
+ * Current shuffle mode, read synchronously from Player.data. Verified 1.3.5 (2026-10-20): a boolean
+ * that follows both our toggle and the player bar's.
  */
 export function getShuffle(): boolean {
   const p = S()?.Player;
@@ -301,7 +301,20 @@ export function getShuffle(): boolean {
   return v === true;
 }
 
-/** PlayerAPI.setShuffle exists on 1.3.5 (method list). UNVERIFIED (spike S3): it takes a boolean. */
+/**
+ * Calls `cb` when shuffle mode changes, including toggles from Spotify's player bar. No verified
+ * shuffle event exists on 1.3.5, so this polls the (synchronous) state — one property read per tick.
+ */
+export function onShuffleChange(cb: (on: boolean) => void, intervalMs = 500): () => void {
+  let last = getShuffle();
+  const timer = setInterval(() => {
+    const now = getShuffle();
+    if (now !== last) cb((last = now));
+  }, intervalMs);
+  return () => clearInterval(timer);
+}
+
+/** Verified 1.3.5 (S3 follow-up, 2026-10-20): PlayerAPI.setShuffle(boolean) toggles global shuffle. */
 export async function setShuffle(on: boolean): Promise<Result<boolean>> {
   const s = S();
   const api = s?.Platform?.PlayerAPI;

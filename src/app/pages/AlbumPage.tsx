@@ -9,6 +9,7 @@ import {
   getShuffle,
   headerColor,
   notify,
+  onShuffleChange,
   onSongChange,
   playTracks,
   setShuffle,
@@ -46,10 +47,10 @@ function useNowPlaying(): string | undefined {
   return uri;
 }
 
-/** Spotify's global shuffle mode, re-read on song changes (it can be toggled from the player bar). */
+/** Spotify's global shuffle mode — follows toggles from the player bar too. */
 function useShuffle(): [boolean, () => void] {
   const [on, setOn] = useState(getShuffle);
-  useEffect(() => onSongChange(() => setOn(getShuffle())), []);
+  useEffect(() => onShuffleChange(setOn), []);
   const toggle = async () => {
     const next = !on;
     setOn(next); // optimistic — the player bar updates a moment later
