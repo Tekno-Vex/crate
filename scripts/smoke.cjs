@@ -73,6 +73,19 @@ const rawTracks = [
 w.Spicetify = {
   React,
   ReactDOM: require('react-dom'),
+  // S7: these exist on 1.3.5. RightClickMenu calls a function child with (isOpen, handleContextMenu,
+  // ref) per spicetify's ContextMenuProps; TrackMenu's real props are UNVERIFIED (`uri` assumed).
+  ReactComponent: {
+    RightClickMenu: ({ menu, children }) => {
+      const [open, setOpen] = React.useState(false);
+      const onContextMenu = (e) => {
+        e.preventDefault();
+        setOpen(true);
+      };
+      return React.createElement(React.Fragment, null, children(open, onContextMenu, () => {}), open ? menu : null);
+    },
+    TrackMenu: ({ uri }) => React.createElement('div', { className: 'mock-track-menu', 'data-uri': uri }, 'Add to playlist'),
+  },
   Config: { version: '2.45.1' },
   showNotification: (m, e) => console.log('  notify:', m, e ? '(error)' : ''),
   // Verified 1.3.5 (spike S7): resolves null for spotify:local: URIs.
@@ -206,6 +219,16 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   await act(async () => w.document.querySelector('.crate-play').dispatchEvent(new w.MouseEvent('click', { bubbles: true })));
   await act(async () => new Promise((r) => setTimeout(r, 20)));
   console.log('played:', JSON.stringify(played));
+  const secondRow = () => w.document.querySelectorAll('.crate-track')[1];
+  await act(async () => secondRow().dispatchEvent(new w.MouseEvent('click', { bubbles: true })));
+  const selectedRow = w.document.querySelector('.crate-track.is-selected .crate-track__title')?.textContent;
+  await act(async () => secondRow().dispatchEvent(new w.MouseEvent('contextmenu', { bubbles: true, cancelable: true })));
+  const menuUri = w.document.querySelector('.mock-track-menu')?.getAttribute('data-uri');
+  const playsBefore = played.length;
+  await act(async () => secondRow().dispatchEvent(new w.MouseEvent('dblclick', { bubbles: true })));
+  await act(async () => new Promise((r) => setTimeout(r, 20)));
+  const dblPlay = played.slice(playsBefore).find((p) => p[0] === 'play');
+  console.log('row click selects:', selectedRow, '| right-click menu for:', menuUri, '| double-click plays index:', dblPlay?.[3]);
   const shuffleBtn = () => w.document.querySelector('.crate-icon-btn');
   const click = (el) => el.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
   await act(async () => click(shuffleBtn()));
@@ -243,6 +266,9 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   assert.equal(albumTopBar, /--crate-tint: (#[0-9a-f]{6})/.exec(tint)[1], 'album page paints the top bar with its tint');
   assert.equal(albumsTopBar, 'rgb(18, 18, 18)', 'other pages paint the top bar with the main-view background');
   // S3 round 1: playUri ignores local URIs on 1.3.5, so albums play as a local-files context.
+  assert.equal(selectedRow, 'Second', 'single click selects the row');
+  assert.equal(menuUri, rawTracks[2].uri, 'right-click opens the native track menu for that row');
+  assert.equal(dblPlay?.[3], 1, 'double-click plays that row inside the album context');
   assert.deepEqual(shuffleOn, { pressed: 'true', label: 'Disable shuffle' });
   assert.equal(shufflePlay[0], 'play');
   assert.ok(shufflePlay[3] >= 0 && shufflePlay[3] < shufflePlay[2].length, 'shuffled start is inside the album');

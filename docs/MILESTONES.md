@@ -25,7 +25,8 @@ Tick items as they land (same commit). Each milestone ends shippable.
   (search + scroll per session, sort across restarts; virtualizes against Spotify's scroll container)
 - [x] Album page: tinted header, Spotify-style tracklist, Play/Shuffle via verified context (S3)
   (shuffle = Spotify's global toggle, like native album pages; Play starts at a random track when on)
-- [ ] Track row: hover play, double-click play, right-click → native track context menu
+- [x] Track row: hover play, double-click play, right-click → native track context menu
+  (click selects, Enter plays; TrackMenu props UNVERIFIED until checked live)
 - [ ] Artists view + artist → albums
 - [ ] Empty/error states (local files disabled, zero tracks, internals changed)
 - [ ] Tested with a 20k-track synthetic library (fixture generator in tests)

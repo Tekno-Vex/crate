@@ -481,3 +481,7 @@ export { describeTopBar, setTopBarColor } from './topBar';
 // ───────────────────────── scrolling ─────────────────────────
 
 export { describeScrollParent, findScrollParent } from './ui';
+
+// ───────────────────────── native components ─────────────────────────
+
+export { NativeTrackMenu, type MenuTriggerProps } from './components';

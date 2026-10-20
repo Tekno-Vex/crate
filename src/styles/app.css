@@ -292,6 +292,15 @@
 .crate-track:hover {
   background: var(--crate-highlight);
 }
+/* Selected / menu-open row, like Spotify's (theme-aware via Spicetify's selected-row color). */
+.crate-track.is-selected,
+.crate-track.is-selected:hover {
+  background: rgba(var(--spice-rgb-selected-row, 255, 255, 255), 0.3);
+}
+.crate-track:focus-visible {
+  outline: 2px solid var(--crate-text);
+  outline-offset: -2px;
+}
 .crate-track.is-playing .crate-track__title,
 .crate-track.is-playing .crate-track__n {
   color: var(--crate-button);
@@ -306,15 +315,17 @@
   position: absolute;
   inset: 0;
   display: none;
-  text-align: right;
+  place-items: center end;
   color: var(--crate-text);
   cursor: pointer;
 }
-.crate-track:hover .crate-track__n {
+.crate-track:hover .crate-track__n,
+.crate-track.is-selected .crate-track__n {
   visibility: hidden;
 }
-.crate-track:hover .crate-track__play {
-  display: block;
+.crate-track:hover .crate-track__play,
+.crate-track.is-selected .crate-track__play {
+  display: grid;
 }
 .crate-track__main {
   display: flex;

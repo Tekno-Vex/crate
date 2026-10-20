@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Album, Library, Track } from '../../domain/model';
-import { formatAlbumDuration, formatTrackDuration, pluralize } from '../../domain/format';
+import { formatAlbumDuration, pluralize } from '../../domain/format';
 import { hasReliableNumbering } from '../../domain/ordering';
 import { pickStartIndex } from '../../domain/playback';
 import {
@@ -15,6 +15,7 @@ import {
   setShuffle,
 } from '../../platform';
 import { Cover } from '../components/Cover';
+import { TrackRow } from '../components/TrackRow';
 import { libraryStore } from '../libraryStore';
 import { NEUTRAL_TOP_BAR, useTopBarColor } from '../useTopBarColor';
 import { Empty } from '../components/States';
@@ -75,6 +76,8 @@ export function AlbumPage({ library, albumKey }: { library: Library; albumKey: s
   }, [albumKey]);
   const nowPlaying = useNowPlaying();
   const [shuffle, toggleShuffle] = useShuffle();
+  const [selected, setSelected] = useState<string>();
+  useEffect(() => setSelected(undefined), [albumKey]);
 
   if (!album) {
     return (
@@ -163,28 +166,15 @@ export function AlbumPage({ library, albumKey }: { library: Library; albumKey: s
               Disc {row.disc}
             </li>
           ) : (
-            <li
+            <TrackRow
               key={row.track.uri}
-              className={`crate-track ${row.track.uri === nowPlaying ? 'is-playing' : ''}`}
-              onDoubleClick={() => play(row.index)}
-            >
-              <span className="crate-track__num">
-                <span className="crate-track__n">{numbered ? (row.track.trackNumber ?? '–') : row.index + 1}</span>
-                <button
-                  type="button"
-                  className="crate-track__play"
-                  aria-label={`Play ${row.track.title}`}
-                  onClick={() => play(row.index)}
-                >
-                  ▶
-                </button>
-              </span>
-              <span className="crate-track__main">
-                <span className="crate-track__title">{row.track.title}</span>
-                <span className="crate-track__artists">{row.track.artistDisplay}</span>
-              </span>
-              <span className="crate-right crate-muted">{formatTrackDuration(row.track.durationMs)}</span>
-            </li>
+              track={row.track}
+              number={numbered ? (row.track.trackNumber ?? '–') : row.index + 1}
+              playing={row.track.uri === nowPlaying}
+              selected={row.track.uri === selected}
+              onSelect={() => setSelected(row.track.uri)}
+              onPlay={() => play(row.index)}
+            />
           ),
         )}
       </ol>
