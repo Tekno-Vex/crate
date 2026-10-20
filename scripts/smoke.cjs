@@ -67,7 +67,8 @@ w.Spicetify = {
   ReactDOM: require('react-dom'),
   Config: { version: '2.45.1' },
   showNotification: (m, e) => console.log('  notify:', m, e ? '(error)' : ''),
-  colorExtractor: async () => ({ DARK_VIBRANT: '#123456' }),
+  // Verified 1.3.5 (spike S7): resolves null for spotify:local: URIs.
+  colorExtractor: async () => null,
   ContextMenu: {
     Item: class {
       constructor(name, onClick, shouldAdd) {
@@ -111,7 +112,24 @@ w.Spicetify = {
   },
 };
 globalThis.Spicetify = w.Spicetify;
-for (const k of ['window', 'document', 'navigator', 'HTMLElement', 'Node', 'performance']) {
+// jsdom can't decode images or draw on canvas. Fake both so the S7 canvas fallback runs:
+// every cover "loads" and reads as solid orange (230,120,40).
+w.Image = class {
+  set src(v) {
+    this._src = v;
+    setTimeout(() => this.onload && this.onload(), 0);
+  }
+  get src() {
+    return this._src;
+  }
+};
+w.HTMLCanvasElement.prototype.getContext = () => ({
+  drawImage() {},
+  getImageData: (_x, _y, wd, ht) => ({
+    data: Uint8ClampedArray.from({ length: wd * ht * 4 }, (_, i) => [230, 120, 40, 255][i % 4]),
+  }),
+});
+for (const k of ['window', 'document', 'navigator', 'HTMLElement', 'Node', 'performance', 'Image']) {
   if (!(k in globalThis) || k === 'window' || k === 'document') globalThis[k] = k === 'window' ? w : w[k];
 }
 
@@ -144,7 +162,8 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   const discs = [...w.document.querySelectorAll('.crate-disc')].map((e) => e.textContent);
   console.log('album page title:', w.document.querySelector('.crate-album__title')?.textContent, '| artist line:', w.document.querySelector('.crate-album__line')?.textContent);
   console.log('tracks:', rows, 'discs:', discs);
-  console.log('tint:', w.document.querySelector('.crate-album')?.getAttribute('style'));
+  const tint = w.document.querySelector('.crate-album')?.getAttribute('style');
+  console.log('tint:', tint);
   console.log('now-playing row:', w.document.querySelector('.crate-track.is-playing .crate-track__title')?.textContent);
 
   await act(async () => w.document.querySelector('.crate-play').dispatchEvent(new w.MouseEvent('click', { bubbles: true })));
@@ -165,6 +184,7 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   assert.ok(w.document.getElementById('crate-styles'), 'styles injected');
   assert.deepEqual(rows, ['First', 'Second', 'Third'], 'disc/track order + "(Disc N)" merge');
   assert.deepEqual(discs, ['Disc 1', 'Disc 2']);
+  assert.match(tint ?? '', /--crate-tint: #[0-9a-f]{6}/, 'header tint from canvas fallback (S7)');
   // S3 round 1: playUri ignores local URIs on 1.3.5, so albums play as a local-files context.
   assert.equal(played[0][0], 'play');
   assert.equal(played[0][1], 'spotify:internal:local-files');

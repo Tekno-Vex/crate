@@ -16,7 +16,9 @@ Tick items as they land (same commit). Each milestone ends shippable.
 
 ## M1 — Spikes + Tier 1 core (the "it works again" release, v0.1)
 
-- [ ] Run S1, S2, S3, S5, S7; record in SPIKES.md; update adapter to verified shapes
+- [x] Run S1, S2, S3, S5, S7; record in SPIKES.md; update adapter to verified shapes
+  (2026-10-20, Spotify 1.3.5; S6 done too. S5 remaining cases — `! * ~`, empty parts, duration
+  rounding — deferred to M4 where URI migration needs them)
 - [ ] Library store: load once, IndexedDB cache, diff on rescan, subscribe hooks
 - [ ] Albums grid: virtualized, search/sort, persisted scroll/search/sort
 - [ ] Album page: tinted header, Spotify-style tracklist, Play/Shuffle via verified context (S3)
@@ -50,7 +52,7 @@ Tick items as they land (same commit). Each milestone ends shippable.
 - [ ] Artwork drag-drop / paste / file pick
 - [ ] Diff preview → confirm → journaled write → undo
 - [ ] Skip/queue writes for the currently playing file
-- [ ] URI migration for playlists + Liked Songs after edits (S4)
+- [ ] URI migration for playlists + Liked Songs after edits (S4; finish S5 encoding cases first)
 - [ ] Auto-number from filename; title-case fixer
 - [ ] Borrow from Spotify: catalog search → align tracks → proposed diff
 

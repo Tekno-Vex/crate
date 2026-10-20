@@ -5,6 +5,7 @@
 
 import { log } from '../lib/log';
 import { pickHeaderColor } from '../domain/color';
+import { isLocalUri } from '../domain/localUri';
 import type { Track } from '../domain/model';
 import { mapLocalTracks } from './mapLocalTrack';
 
@@ -290,8 +291,8 @@ export async function copyToClipboard(text: string): Promise<boolean> {
 }
 
 /**
- * S7 (1.3.5, 2026-10-20): album headers stayed grey, so this does not yield a color for
- * spotify:local: URIs. UNVERIFIED (spike S7): whether it throws or returns empty — see Diagnostics.
+ * Verified 1.3.5 (spike S7, 2026-10-20): resolves null for spotify:local: URIs — useful only for
+ * catalog URIs. Local covers go through sampleImagePixels + pickHeaderColor instead.
  */
 export async function extractColors(uri: string): Promise<Result<Record<string, string>>> {
   const fn = S()?.colorExtractor;
@@ -309,7 +310,7 @@ export async function extractColors(uri: string): Promise<Result<Record<string, 
 
 /**
  * Downscaled RGBA pixels of an image the renderer can load (e.g. spotify:localfileimage:…).
- * UNVERIFIED (spike S7): whether getImageData is allowed or the canvas is tainted.
+ * Verified 1.3.5 (spike S7): local covers don't taint the canvas; ~30–45 ms per cover at 32px.
  */
 export function sampleImagePixels(url: string, size = 32, timeoutMs = 4000): Promise<Result<Uint8ClampedArray>> {
   return new Promise((resolve) => {
@@ -342,9 +343,11 @@ export async function headerColor(
   trackUri: string,
   imageUrl: string | undefined,
 ): Promise<Result<{ color: string; source: 'colorExtractor' | 'canvas' }>> {
-  const ext = await extractColors(trackUri);
-  const extColor = ext.ok ? (ext.value.DARK_VIBRANT ?? ext.value.PROMINENT ?? ext.value.VIBRANT) : undefined;
-  if (extColor) return ok({ color: extColor, source: 'colorExtractor' });
+  if (!isLocalUri(trackUri)) {
+    const ext = await extractColors(trackUri);
+    const extColor = ext.ok ? (ext.value.DARK_VIBRANT ?? ext.value.PROMINENT ?? ext.value.VIBRANT) : undefined;
+    if (extColor) return ok({ color: extColor, source: 'colorExtractor' });
+  }
   if (!imageUrl) return fail('unavailable', 'no cover image');
   const px = await sampleImagePixels(imageUrl);
   if (!px.ok) return px;
