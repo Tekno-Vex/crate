@@ -4,7 +4,7 @@
 //   2. directory of the config file printed by `spicetify -c`
 //   3. platform default (%APPDATA%\spicetify on Windows, ~/.config/spicetify elsewhere)
 
-import { cp, rm, readFile, access } from 'node:fs/promises';
+import { cp, rm, readFile, access, mkdir, readdir } from 'node:fs/promises';
 import { execSync } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
@@ -52,8 +52,14 @@ export async function installApp({ quiet = false } = {}) {
     );
   }
   const dest = path.join(spicetifyDir, 'CustomApps', appId);
-  await rm(dest, { recursive: true, force: true });
-  await cp(src, dest, { recursive: true });
+  // Overwrite in place — never delete the folder. `spicetify watch` reads it while we copy, and a
+  // vanished folder/file makes it crash (seen 2026-10-20). Stale files are removed afterwards.
+  await mkdir(dest, { recursive: true });
+  const files = await readdir(src);
+  for (const f of files) await cp(path.join(src, f), path.join(dest, f), { recursive: true, force: true });
+  for (const f of await readdir(dest)) {
+    if (!files.includes(f)) await rm(path.join(dest, f), { recursive: true, force: true });
+  }
   if (!quiet) {
     console.log(`Installed → ${dest}`);
     console.log('\nFirst time only:');
