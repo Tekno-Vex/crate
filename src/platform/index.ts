@@ -132,6 +132,58 @@ export async function getLocalSourcesRaw(): Promise<Result<unknown>> {
   }
 }
 
+/**
+ * Event names we try on LocalFilesAPI.getEvents(). UNVERIFIED (spike S4): the API has _emitUpdate /
+ * _emitTrackUpdate on 1.3.5 but the event names are unknown — describeLocalFilesEvents() finds them.
+ * Subscribing to a name that never fires is harmless; the store also rescans on open/focus.
+ */
+const LOCAL_FILES_EVENT_CANDIDATES = ['update', 'tracks_update', 'track_update', 'tracksUpdate', 'trackUpdate'];
+
+function localFilesEmitter(): any {
+  const api = S()?.Platform?.LocalFilesAPI;
+  try {
+    return typeof api?.getEvents === 'function' ? api.getEvents() : api?._events;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Calls `cb` when Spotify reports local files changed. Returns an unsubscribe function. */
+export function onLocalTracksChanged(cb: () => void): () => void {
+  const em = localFilesEmitter();
+  const add = em?.addListener ?? em?.on;
+  const remove = em?.removeListener ?? em?.off;
+  if (typeof add !== 'function') return () => {};
+  const subs: (() => void)[] = [];
+  for (const name of LOCAL_FILES_EVENT_CANDIDATES) {
+    try {
+      const ret = add.call(em, name, cb);
+      subs.push(typeof ret === 'function' ? ret : () => remove?.call(em, name, cb));
+    } catch {
+      // emitter rejected the name — ignore
+    }
+  }
+  return () => subs.forEach((off) => off());
+}
+
+/** Diagnostics: shape of LocalFilesAPI's event emitter, including event names Spotify listens to. */
+export function describeLocalFilesEvents(): unknown {
+  const em = localFilesEmitter();
+  if (!em) return { found: false };
+  const listenerNames: Record<string, string[]> = {};
+  for (const [k, v] of Object.entries(em)) {
+    if (v instanceof Map) listenerNames[k] = [...v.keys()].map(String);
+    else if (v && typeof v === 'object' && !Array.isArray(v)) listenerNames[k] = Object.keys(v);
+  }
+  let proto = Object.getPrototypeOf(em);
+  const methods = new Set<string>();
+  while (proto && proto !== Object.prototype) {
+    for (const k of Object.getOwnPropertyNames(proto)) if (k !== 'constructor') methods.add(k);
+    proto = Object.getPrototypeOf(proto);
+  }
+  return { found: true, ownKeys: Object.keys(em), methods: [...methods].sort(), listenerNames };
+}
+
 /** Raw objects from Spotify. Verified on 1.3.5 (S1): getTracks() resolves to a plain array. */
 export async function getLocalTracksRaw(): Promise<Result<unknown[]>> {
   const api = S()?.Platform?.LocalFilesAPI;

@@ -19,7 +19,8 @@ Tick items as they land (same commit). Each milestone ends shippable.
 - [x] Run S1, S2, S3, S5, S7; record in SPIKES.md; update adapter to verified shapes
   (2026-10-20, Spotify 1.3.5; S6 done too. S5 remaining cases — `! * ~`, empty parts, duration
   rounding — deferred to M4 where URI migration needs them)
-- [ ] Library store: load once, IndexedDB cache, diff on rescan, subscribe hooks
+- [x] Library store: load once, IndexedDB cache, diff on rescan, subscribe hooks
+  (rescans on open/focus; Spotify change-event names UNVERIFIED — Diagnostics shows them)
 - [ ] Albums grid: virtualized, search/sort, persisted scroll/search/sort
 - [ ] Album page: tinted header, Spotify-style tracklist, Play/Shuffle via verified context (S3)
 - [ ] Track row: hover play, double-click play, right-click → native track context menu

@@ -7,6 +7,7 @@ import { hasReliableNumbering } from '../../domain/ordering';
 import {
   copyToClipboard,
   describeApi,
+  describeLocalFilesEvents,
   getLocalSourcesRaw,
   extractColors,
   getPlayerSnapshot,
@@ -20,6 +21,7 @@ import {
   type PlayStrategy,
 } from '../../platform';
 import { fieldInventory, mapLocalTracks } from '../../platform/mapLocalTrack';
+import { libraryStore } from '../libraryStore';
 import { probeHttp, probeWebSocket, type ReachabilityResult } from '../../platform/probes';
 
 // The bridge between Claude Code and the live Spotify client. Each probe maps to a spike in
@@ -30,6 +32,8 @@ const HELPER_PORT = 47823;
 interface Report {
   generatedAt: string;
   versions: ReturnType<typeof getVersions>;
+  localFilesEvents: unknown;
+  libraryStore: unknown;
   platformApis: string[];
   localish: Record<string, string[]>;
   s1?: unknown;
@@ -110,7 +114,18 @@ export function DiagnosticsPage() {
     const localish = Object.fromEntries(
       apis.filter((n) => /local|librar|playlist|player|collection/i.test(n)).map((n) => [n, describeApi(n)]),
     );
-    return { versions: getVersions(), platformApis: apis, localish };
+    const st = libraryStore().getState();
+    return {
+      versions: getVersions(),
+      // Event names Spotify itself listens to on LocalFilesAPI (rescan detection, spike S4).
+      localFilesEvents: describeLocalFilesEvents(),
+      libraryStore:
+        st.status === 'ready'
+          ? { status: st.status, source: st.source, tracks: st.library.tracks.length, updatedAt: new Date(st.updatedAt).toISOString(), staleError: st.staleError }
+          : st,
+      platformApis: apis,
+      localish,
+    };
   }, []);
 
   const [report, setReport] = useState<Report>(() => ({ generatedAt: new Date().toISOString(), ...base }));
@@ -246,6 +261,14 @@ export function DiagnosticsPage() {
 
       <Section title="Versions">
         <Json value={report.versions} />
+      </Section>
+
+      <Section title="Library store + change events">
+        <p className="crate-muted">
+          Where the library came from (cache or live scan), and the event names Spotify's own UI listens
+          to for local-file changes.
+        </p>
+        <Json value={{ store: report.libraryStore, events: report.localFilesEvents }} />
       </Section>
 
       <Section title="Local files API" spike="S1">

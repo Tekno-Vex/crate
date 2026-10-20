@@ -4,18 +4,23 @@ import { formatAlbumDuration, formatTrackDuration, pluralize } from '../../domai
 import { hasReliableNumbering } from '../../domain/ordering';
 import { getCurrentTrackUri, headerColor, notify, onSongChange, playTracks } from '../../platform';
 import { Cover } from '../components/Cover';
+import { libraryStore } from '../libraryStore';
 import { Empty } from '../components/States';
 import { go } from '../routes';
 
 function useHeaderColor(album: Album | undefined): string | undefined {
   const [color, setColor] = useState<string>();
   useEffect(() => {
-    setColor(undefined);
     const uri = album?.tracks[0]?.uri;
-    if (!uri) return;
+    const cacheKey = album?.imageUrl ?? album?.key;
+    const cached = cacheKey ? libraryStore().getTint(cacheKey) : undefined;
+    setColor(cached);
+    if (!uri || !cacheKey || cached) return;
     let alive = true;
     headerColor(uri, album?.imageUrl).then((res) => {
-      if (alive && res.ok) setColor(res.value.color);
+      if (!res.ok) return;
+      libraryStore().setTint(cacheKey, res.value.color);
+      if (alive) setColor(res.value.color);
     });
     return () => {
       alive = false;

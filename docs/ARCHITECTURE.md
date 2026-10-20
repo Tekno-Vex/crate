@@ -78,7 +78,12 @@ verified, the adapter falls back to: play first track, then enqueue the rest.
 
 ## Storage
 
-- IndexedDB `crate` db: `tracks`, `albums`, `coverHashes`, `plays`, `uiState`, `journal-mirror`.
+- IndexedDB `crate` db, one `kv` store (`src/lib/idb.ts`): `library` = `{schema, savedAt, tracks}`
+  (albums are rebuilt from tracks, so grouping changes never need a cache bump — Track shape changes
+  bump `CACHE_SCHEMA`), `tints` = cover → header color. Later keys: `coverHashes`, `plays`, `uiState`.
+- Store (`src/app/libraryStore.ts`): paint cache → live scan → `rebuildLibrary` keeps unchanged
+  `Album` objects `===` so memoized views skip them → write cache only if the scan differs.
+  Rescan triggers: Crate opened, window focus, LocalFilesAPI events (names UNVERIFIED).
 - `Spicetify.LocalStorage` only for tiny settings.
 - Helper is the source of truth for tag data and the write journal.
 
