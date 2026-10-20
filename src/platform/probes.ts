@@ -1,6 +1,46 @@
 // Diagnostics probes for things that aren't Spotify APIs but depend on the Spotify renderer
 // environment (CSP, network). Used by spike S2.
 
+export interface TopBarElement {
+  tag: string;
+  className: string;
+  id?: string;
+  testId?: string;
+  background: string;
+  opacity: string;
+  position: string;
+  inlineStyle?: string;
+}
+
+/**
+ * Elements stacked over the top of our page — finds Spotify's sticky top bar and the element whose
+ * background shows while scrolling (the "purple bar"). DOM class names: UNVERIFIED (1.3.5 spike).
+ */
+export function probeTopBar(anchor: Element | null): TopBarElement[] {
+  const rect = anchor?.getBoundingClientRect();
+  const x = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
+  const seen = new Set<Element>();
+  const out: TopBarElement[] = [];
+  for (let y = 8; y <= 128; y += 24) {
+    for (const el of document.elementsFromPoint(x, y)) {
+      if (seen.has(el) || el === document.body || el === document.documentElement) continue;
+      seen.add(el);
+      const cs = getComputedStyle(el);
+      out.push({
+        tag: el.tagName.toLowerCase(),
+        className: typeof el.className === 'string' ? el.className : '',
+        id: el.id || undefined,
+        testId: el.getAttribute('data-testid') ?? undefined,
+        background: cs.backgroundColor,
+        opacity: cs.opacity,
+        position: cs.position,
+        inlineStyle: el.getAttribute('style') ?? undefined,
+      });
+    }
+  }
+  return out.slice(0, 30);
+}
+
 export interface ReachabilityResult {
   transport: 'http' | 'ws';
   url: string;

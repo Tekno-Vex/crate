@@ -22,7 +22,7 @@ import {
 } from '../../platform';
 import { fieldInventory, mapLocalTracks } from '../../platform/mapLocalTrack';
 import { libraryStore } from '../libraryStore';
-import { probeHttp, probeWebSocket, type ReachabilityResult } from '../../platform/probes';
+import { probeHttp, probeTopBar, probeWebSocket, type ReachabilityResult } from '../../platform/probes';
 
 // The bridge between Claude Code and the live Spotify client. Each probe maps to a spike in
 // docs/SPIKES.md. "Copy report" produces JSON Vivek pastes back into Claude Code.
@@ -39,6 +39,7 @@ interface Report {
   s1?: unknown;
   s2?: ReachabilityResult[];
   s7?: unknown;
+  topBar?: unknown;
   s3?: { strategy: PlayStrategy; ok: boolean; message?: string; played?: string[]; snapshot?: unknown }[];
 }
 
@@ -319,6 +320,22 @@ export function DiagnosticsPage() {
           {busy === 's7' ? 'Testing…' : 'Test cover colors'}
         </button>
         {report.s7 !== undefined && <Json value={report.s7} />}
+      </Section>
+
+      <Section title="Top bar">
+        <p className="crate-muted">
+          Scroll so Spotify's top bar is showing its color, then click. Lists the elements stacked over the
+          top of this page so Crate can set that bar's color itself.
+        </p>
+        <button
+          type="button"
+          className="crate-btn"
+          disabled={!!busy}
+          onClick={() => setReport((r) => ({ ...r, topBar: probeTopBar(document.querySelector('.crate-root')) }))}
+        >
+          Probe top bar
+        </button>
+        {report.topBar !== undefined && <Json value={report.topBar} />}
       </Section>
 
       <Section title="Platform APIs">

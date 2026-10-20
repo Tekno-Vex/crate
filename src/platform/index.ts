@@ -170,11 +170,17 @@ export function onLocalTracksChanged(cb: () => void): () => void {
 export function describeLocalFilesEvents(): unknown {
   const em = localFilesEmitter();
   if (!em) return { found: false };
+  // 1.3.5: the wrapper holds `_emitter`, whose `_listeners` / `_metaListeners` are keyed by event
+  // name — walk a few levels and report the keys of every map-like value.
   const listenerNames: Record<string, string[]> = {};
-  for (const [k, v] of Object.entries(em)) {
-    if (v instanceof Map) listenerNames[k] = [...v.keys()].map(String);
-    else if (v && typeof v === 'object' && !Array.isArray(v)) listenerNames[k] = Object.keys(v);
-  }
+  const walk = (v: unknown, path: string, depth: number) => {
+    if (!v || typeof v !== 'object' || Array.isArray(v) || depth > 3) return;
+    const entries: [string, unknown][] =
+      v instanceof Map ? [...v.entries()].map(([k, x]) => [String(k), x]) : Object.entries(v);
+    listenerNames[path] = entries.map(([k]) => k);
+    for (const [k, x] of entries) if (!(x instanceof Function)) walk(x, `${path}.${k}`, depth + 1);
+  };
+  for (const [k, v] of Object.entries(em)) walk(v, k, 0);
   let proto = Object.getPrototypeOf(em);
   const methods = new Set<string>();
   while (proto && proto !== Object.prototype) {
