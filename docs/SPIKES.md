@@ -101,3 +101,16 @@ auto-discover folders; if not, the helper asks the user once.
 - Versions: `Platform.version` = "1.3.5.3058", `Platform.operatingSystem` = "Windows",
   renderer origin = **`https://xpui.app.spotify.com`**.
 - For M2: SEGA OSTs come as "… (Side A)" — candidate for `stripDiscSuffix` if a Side B shows up.
+
+### Rescan events + top bar — 2026-10-20 (1.3.5)
+
+- `LocalFilesAPI.getEvents()` → wrapper `{ _emitter: { _listeners, _metaListeners } }` with
+  `addListener/removeListener/emit/emitSync/createEvent`. With Spotify's Local Files page closed, the
+  only `_listeners` keys were **our own guesses** (`update`, `tracks_update`, …) — Spotify's UI does
+  not hold a listener there, so the real event name is still unknown. Rescan-on-open/focus covers the
+  M1 need (verified: retitled a track in iTunes, refocused Spotify, Crate updated). Revisit in S4:
+  temporarily wrap `_emitter.emit` in Diagnostics to record emitted names while a file changes.
+- Spotify's main-view top bar keeps the last native page's color on custom-app routes (purple after
+  Liked Songs, black otherwise). Point sampling (`elementsFromPoint`) can't see it (pointer-events
+  none). Crate now finds it structurally (full-width absolute element pinned to `#main-view` top)
+  and paints it — UNVERIFIED which element wins; Diagnostics → "Top bar" lists candidates.

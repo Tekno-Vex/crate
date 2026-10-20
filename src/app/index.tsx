@@ -7,12 +7,15 @@ import { AlbumsPage } from './pages/AlbumsPage';
 import { DiagnosticsPage } from './pages/DiagnosticsPage';
 import { go, useRoute } from './routes';
 import { useLibrary } from './useLibrary';
+import { NEUTRAL_TOP_BAR, useTopBarColor } from './useTopBarColor';
 
 // Spicetify calls the global render() (appended by scripts/build.mjs), which mounts this.
 export default function App() {
   useEffect(ensureStyles, []);
   const route = useRoute();
   const lib = useLibrary();
+  // Album pages paint the bar with their cover color; every other Crate page uses the neutral one.
+  useTopBarColor(route.name === 'album' ? undefined : NEUTRAL_TOP_BAR);
 
   let body;
   if (route.name === 'diagnostics') {

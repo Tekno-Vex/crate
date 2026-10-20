@@ -5,6 +5,7 @@ import { hasReliableNumbering } from '../../domain/ordering';
 import { getCurrentTrackUri, headerColor, notify, onSongChange, playTracks } from '../../platform';
 import { Cover } from '../components/Cover';
 import { libraryStore } from '../libraryStore';
+import { NEUTRAL_TOP_BAR, useTopBarColor } from '../useTopBarColor';
 import { Empty } from '../components/States';
 import { go } from '../routes';
 
@@ -38,6 +39,7 @@ function useNowPlaying(): string | undefined {
 export function AlbumPage({ library, albumKey }: { library: Library; albumKey: string }) {
   const album = library.albumsByKey.get(albumKey);
   const color = useHeaderColor(album);
+  useTopBarColor(color ?? NEUTRAL_TOP_BAR);
   const nowPlaying = useNowPlaying();
 
   if (!album) {

@@ -436,3 +436,7 @@ export function registerTrackMenuItem(
     return fail('failed', 'ContextMenu registration threw', String(e));
   }
 }
+
+// ───────────────────────── top bar ─────────────────────────
+
+export { describeTopBar, setTopBarColor } from './topBar';

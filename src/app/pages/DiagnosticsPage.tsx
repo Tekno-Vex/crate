@@ -8,6 +8,7 @@ import {
   copyToClipboard,
   describeApi,
   describeLocalFilesEvents,
+  describeTopBar,
   getLocalSourcesRaw,
   extractColors,
   getPlayerSnapshot,
@@ -22,7 +23,7 @@ import {
 } from '../../platform';
 import { fieldInventory, mapLocalTracks } from '../../platform/mapLocalTrack';
 import { libraryStore } from '../libraryStore';
-import { probeHttp, probeTopBar, probeWebSocket, type ReachabilityResult } from '../../platform/probes';
+import { probeHttp, probeWebSocket, type ReachabilityResult } from '../../platform/probes';
 
 // The bridge between Claude Code and the live Spotify client. Each probe maps to a spike in
 // docs/SPIKES.md. "Copy report" produces JSON Vivek pastes back into Claude Code.
@@ -324,14 +325,14 @@ export function DiagnosticsPage() {
 
       <Section title="Top bar">
         <p className="crate-muted">
-          Scroll so Spotify's top bar is showing its color, then click. Lists the elements stacked over the
-          top of this page so Crate can set that bar's color itself.
+          Lists full-width elements pinned to the top of Spotify's main view, best guess first. Crate
+          paints the first one (album color on album pages, page background elsewhere).
         </p>
         <button
           type="button"
           className="crate-btn"
           disabled={!!busy}
-          onClick={() => setReport((r) => ({ ...r, topBar: probeTopBar(document.querySelector('.crate-root')) }))}
+          onClick={() => setReport((r) => ({ ...r, topBar: describeTopBar() }))}
         >
           Probe top bar
         </button>
