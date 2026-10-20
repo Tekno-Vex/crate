@@ -12,7 +12,7 @@ Tick items as they land (same commit). Each milestone ends shippable.
 - [x] Minimal albums grid + album page wired end to end
 - [x] Extension: right-click local track → "Go to album (Crate)" (pulled forward from M2)
 - [x] Smoke test: built bundles + mocked Spicetify in jsdom (`npm run smoke`)
-- [ ] First install on Vivek's machine; app appears in sidebar; Diagnostics loads
+- [x] First install on Vivek's machine; app appears (top-bar nav on 1.3.5); Diagnostics loads — 111 albums / 615 tracks
 
 ## M1 — Spikes + Tier 1 core (the "it works again" release, v0.1)
 

@@ -44,18 +44,28 @@ export interface Versions {
   os?: string;
   osVersion?: string;
   platform?: string;
+  /** Primitive PlatformData fields, so Diagnostics shows the real key names. */
+  platformData?: Record<string, string | number | boolean>;
 }
 
 export function getVersions(): Versions {
   const s = S();
   const pd = s?.Platform?.PlatformData ?? {};
+  // UNVERIFIED (spike S1): on 1.3.5 client_version_* / os_name came back empty; the CEF
+  // user agent carries "Spotify/<version>" so use it as a fallback.
+  const uaVersion = /Spotify\/([\d.]+)/.exec(globalThis.navigator?.userAgent ?? '')?.[1];
+  const platformData: Record<string, string | number | boolean> = {};
+  for (const [k, v] of Object.entries(pd)) {
+    if (['string', 'number', 'boolean'].includes(typeof v)) platformData[k] = v as string | number | boolean;
+  }
   return {
     app: __APP_VERSION__,
-    spotify: pd.client_version_quadruple ?? pd.client_version_triple,
+    spotify: pd.client_version_quadruple ?? pd.client_version_triple ?? uaVersion,
     spicetify: s?.Config?.version,
     os: pd.os_name,
     osVersion: pd.os_version,
     platform: pd.app_platform,
+    platformData,
   };
 }
 
