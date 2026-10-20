@@ -215,6 +215,41 @@
 }
 .crate-album__actions {
   padding: 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.crate-icon-btn {
+  all: unset;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: var(--crate-subtext);
+  cursor: pointer;
+  position: relative;
+  transition: color 0.15s, transform 0.1s;
+}
+.crate-icon-btn:hover {
+  color: var(--crate-text);
+  transform: scale(1.04);
+}
+.crate-icon-btn:focus-visible {
+  outline: 2px solid var(--crate-text);
+}
+.crate-icon-btn.is-active {
+  color: var(--crate-button);
+}
+/* Spotify marks active toggles with a dot under the icon. */
+.crate-icon-btn.is-active::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
 }
 .crate-play {
   width: 56px;

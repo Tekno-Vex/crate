@@ -291,6 +291,30 @@ export async function getPlayerSnapshot(): Promise<Result<PlayerSnapshot>> {
   }
 }
 
+/**
+ * Current shuffle mode. S3 verified PlayerAPI.getState() has a `shuffle` key on 1.3.5; Player.data
+ * mirrors that state synchronously. UNVERIFIED (spike S3): the value is a plain boolean.
+ */
+export function getShuffle(): boolean {
+  const p = S()?.Player;
+  const v = p?.data?.shuffle ?? (typeof p?.getShuffle === 'function' ? p.getShuffle() : undefined);
+  return v === true;
+}
+
+/** PlayerAPI.setShuffle exists on 1.3.5 (method list). UNVERIFIED (spike S3): it takes a boolean. */
+export async function setShuffle(on: boolean): Promise<Result<boolean>> {
+  const s = S();
+  const api = s?.Platform?.PlayerAPI;
+  try {
+    if (typeof api?.setShuffle === 'function') await api.setShuffle(on);
+    else if (typeof s?.Player?.setShuffle === 'function') await s.Player.setShuffle(on);
+    else return fail('unavailable', 'setShuffle not found');
+    return ok(on);
+  } catch (e) {
+    return fail('failed', 'setShuffle threw', String(e));
+  }
+}
+
 export function getCurrentTrackUri(): string | undefined {
   return S()?.Player?.data?.item?.uri ?? S()?.Player?.data?.track?.uri;
 }

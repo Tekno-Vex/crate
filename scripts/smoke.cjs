@@ -86,7 +86,7 @@ w.Spicetify = {
     },
   },
   Player: {
-    data: { item: { uri: rawTracks[1].uri } },
+    data: { item: { uri: rawTracks[1].uri }, shuffle: false },
     playUri: async (u) => played.push(['playUri', u]),
     addEventListener() {},
     removeEventListener() {},
@@ -111,7 +111,13 @@ w.Spicetify = {
         folders: [{ path: 'C:\Music' }],
       }),
     },
-    PlayerAPI: { addToQueue: async (items) => played.push(['queue', items.map((i) => i.uri)]), play: async (ctx, _opts, extra) => played.push(['play', ctx.uri, ctx.pages[0].items.map((i) => i.uri), extra.skipTo.index]),
+    PlayerAPI: {
+      // UNVERIFIED (S3): assumes setShuffle(bool) is reflected in Player.data.shuffle.
+      setShuffle: async (on) => {
+        w.Spicetify.Player.data.shuffle = on;
+        played.push(['shuffle', on]);
+      },
+      addToQueue: async (items) => played.push(['queue', items.map((i) => i.uri)]), play: async (ctx, _opts, extra) => played.push(['play', ctx.uri, ctx.pages[0].items.map((i) => i.uri), extra.skipTo.index]),
       getState: async () => ({ context: { uri: 'spotify:internal:local-files' }, item: { uri: rawTracks[1].uri } }),
       getQueue: async () => ({ nextUp: [{ uri: rawTracks[2].uri }] }),
     },
@@ -195,6 +201,16 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   await act(async () => w.document.querySelector('.crate-play').dispatchEvent(new w.MouseEvent('click', { bubbles: true })));
   await act(async () => new Promise((r) => setTimeout(r, 20)));
   console.log('played:', JSON.stringify(played));
+  const shuffleBtn = () => w.document.querySelector('.crate-icon-btn');
+  const click = (el) => el.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await act(async () => click(shuffleBtn()));
+  const shuffleOn = { pressed: shuffleBtn().getAttribute('aria-pressed'), label: shuffleBtn().getAttribute('aria-label') };
+  await act(async () => click(w.document.querySelector('.crate-play')));
+  await act(async () => new Promise((r) => setTimeout(r, 20)));
+  const shufflePlay = played.at(-1);
+  await act(async () => click(shuffleBtn()));
+  const shuffleOff = shuffleBtn().getAttribute('aria-pressed');
+  console.log('shuffle on:', shuffleOn, '→ play:', JSON.stringify(shufflePlay), '→ off:', shuffleOff);
 
   await act(async () => history.push('/crate'));
   const albumsTopBar = topBar();
@@ -221,6 +237,11 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   assert.equal(albumTopBar, /--crate-tint: (#[0-9a-f]{6})/.exec(tint)[1], 'album page paints the top bar with its tint');
   assert.equal(albumsTopBar, 'rgb(18, 18, 18)', 'other pages paint the top bar with the main-view background');
   // S3 round 1: playUri ignores local URIs on 1.3.5, so albums play as a local-files context.
+  assert.deepEqual(shuffleOn, { pressed: 'true', label: 'Disable shuffle' });
+  assert.equal(shufflePlay[0], 'play');
+  assert.ok(shufflePlay[3] >= 0 && shufflePlay[3] < shufflePlay[2].length, 'shuffled start is inside the album');
+  assert.equal(shuffleOff, 'false');
+  assert.deepEqual(played.filter((p) => p[0] === 'shuffle'), [['shuffle', true], ['shuffle', false]]);
   assert.equal(played[0][0], 'play');
   assert.equal(played[0][1], 'spotify:internal:local-files');
   assert.deepEqual(played[0][2].length, 3, 'whole album passed as the context page');

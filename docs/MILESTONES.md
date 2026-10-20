@@ -23,7 +23,8 @@ Tick items as they land (same commit). Each milestone ends shippable.
   (rescans on open/focus; Spotify change-event names UNVERIFIED — Diagnostics shows them)
 - [x] Albums grid: virtualized, search/sort, persisted scroll/search/sort
   (search + scroll per session, sort across restarts; virtualizes against Spotify's scroll container)
-- [ ] Album page: tinted header, Spotify-style tracklist, Play/Shuffle via verified context (S3)
+- [x] Album page: tinted header, Spotify-style tracklist, Play/Shuffle via verified context (S3)
+  (shuffle = Spotify's global toggle, like native album pages; Play starts at a random track when on)
 - [ ] Track row: hover play, double-click play, right-click → native track context menu
 - [ ] Artists view + artist → albums
 - [ ] Empty/error states (local files disabled, zero tracks, internals changed)
