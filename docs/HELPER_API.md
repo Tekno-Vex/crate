@@ -18,7 +18,7 @@ The custom app works without it; with it, Crate gets true tags and editing.
 - Bind `127.0.0.1:47823` only (port configurable). Never `0.0.0.0`.
 - **Pairing:** first launch prints/shows a 6-digit code. App calls `POST /v1/pair {code}` →
   `{token}`. Every other request needs `Authorization: Bearer <token>`. Token stored by the app.
-- Check `Origin` — allow only the Spotify renderer's origin(s) (value: Diagnostics → Versions → `origin`).
+- Check `Origin` — allow only the Spotify renderer's origin(s) (verified 1.3.5: `https://xpui.app.spotify.com`).
   S2 (1.3.5): the renderer may fetch 127.0.0.1 with no CSP block, so the helper must answer CORS
   preflights (`Access-Control-Allow-Origin` = that origin, `Access-Control-Allow-Headers: authorization,
   content-type`) and Chromium's Private Network Access preflight (`Access-Control-Allow-Private-Network: true`).

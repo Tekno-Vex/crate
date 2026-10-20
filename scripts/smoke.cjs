@@ -93,8 +93,20 @@ w.Spicetify = {
       is_developer_mode: true,
       remote_config_client_id: 'desktop-ui',
     },
-    LocalFilesAPI: { getTracks: async () => rawTracks },
-    PlayerAPI: { addToQueue: async (items) => played.push(['queue', items.map((i) => i.uri)]), play: async () => {} },
+    version: '1.3.5.3058',
+    operatingSystem: 'Windows',
+    LocalFilesAPI: {
+      getTracks: async () => rawTracks,
+      // Verified shape on 1.3.5 (spike S6, 2026-10-20).
+      getSources: async () => ({
+        defaultSources: [{ enabled: false, id: 'downloads' }, { enabled: false, id: 'windows_music_library' }],
+        folders: [{ path: 'C:\Music' }],
+      }),
+    },
+    PlayerAPI: { addToQueue: async (items) => played.push(['queue', items.map((i) => i.uri)]), play: async (ctx, _opts, extra) => played.push(['play', ctx.uri, ctx.pages[0].items.map((i) => i.uri), extra.skipTo.index]),
+      getState: async () => ({ context: { uri: 'spotify:internal:local-files' }, item: { uri: rawTracks[1].uri } }),
+      getQueue: async () => ({ nextUp: [{ uri: rawTracks[2].uri }] }),
+    },
     ClipboardAPI: { copy: async () => {} },
   },
 };
@@ -153,7 +165,10 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   assert.ok(w.document.getElementById('crate-styles'), 'styles injected');
   assert.deepEqual(rows, ['First', 'Second', 'Third'], 'disc/track order + "(Disc N)" merge');
   assert.deepEqual(discs, ['Disc 1', 'Disc 2']);
-  assert.equal(played[0][0], 'playUri');
+  // S3 round 1: playUri ignores local URIs on 1.3.5, so albums play as a local-files context.
+  assert.equal(played[0][0], 'play');
+  assert.equal(played[0][1], 'spotify:internal:local-files');
+  assert.deepEqual(played[0][2].length, 3, 'whole album passed as the context page');
   assert.equal(s1.rawCount, rawTracks.length);
   await act(async () => root.unmount());
   console.log('SMOKE OK');

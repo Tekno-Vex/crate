@@ -64,12 +64,12 @@ auto-discover folders; if not, the helper asks the user once.
 
 | Spike | Date | Spotify | Spicetify | Result | Follow-up |
 | ----- | ---- | ------- | --------- | ------ | --------- |
-| S1    | 2026-10-20 | 1.3.5.3058 (Win) | 2.45.3 | ✅ `LocalFilesAPI.getTracks()` → plain array, 615 tracks in 57 ms. Per track: `trackNumber`, `discNumber` (numbers, **0 = untagged**; 581/615 numbered, 16 with disc > 0), `addedAt` (**Date**), `album.{name,uri,artist,images}`, `artists[]`, `duration.milliseconds`, `uid`, `isLocal/isPlayable`. Cover = `spotify:localfileimage:<encoded file path>` (609/615) → **file path for free**; renders in `<img>`. | Mapper updated + real fixture. Follow-up probe: does `album.artist` reflect the album-artist tag? are `artists[]` ever split? why 27 albums lack numbering? |
+| S1    | 2026-10-20 | 1.3.5.3058 (Win) | 2.45.3 | ✅ `LocalFilesAPI.getTracks()` → plain array, 615 tracks in 57 ms. Per track: `trackNumber`, `discNumber` (numbers, **0 = untagged**; 581/615 numbered, 16 with disc > 0), `addedAt` (**Date**), `album.{name,uri,artist,images}`, `artists[]`, `duration.milliseconds`, `uid`, `isLocal/isPlayable`. Cover = `spotify:localfileimage:<encoded file path>` (609/615) → **file path for free**; renders in `<img>`. | Mapper updated + real fixture. Follow-up answered same day — see notes below. |
 | S2    | 2026-10-20 | 1.3.5.3058 (Win) | 2.45.3 | ✅ No CSP block. HTTP to 127.0.0.1 and localhost, and WS to 127.0.0.1, all fail with a connection-refused error and record no CSP violations (≈2 s each — Windows refused-connect retry). | HTTP transport OK. Helper must answer CORS (+ Private Network Access preflight) for the renderer origin — origin now in the Versions block. |
-| S3    |      |         |           |        |           |
+| S3    | 2026-10-20 | 1.3.5.3058 (Win) | 2.45.3 | Round 1: `PlayerAPI.play({uri, pages:[{items}]}, {}, {skipTo})` works for both `spotify:internal:local-files` and `spotify:app:crate`; Next/Prev work (Prev restarts the track first — normal Spotify). local-files-context shows **\"Local Files\"** as the source. **queue-fallback plays nothing** (`Player.playUri` ignores local URIs). Round 1 couldn't tell whose order is used (sample was tracks 1-2-3 = Spotify's natural order). | Default → local-files-context. Round 2: play tracks 3-2-1 reversed + snapshot `getState`/`getQueue`. |
 | S4    |      |         |           |        |           |
 | S5    | 2026-10-20 | 1.3.5.3058 (Win) | 2.45.3 | Partial: 20 real URIs. Spotify percent-encodes `' ( ) $ ? / , & [ ]` and UTF-8; leaves `- .` raw; space → `+`. Our encoder left `'()` raw → **fixed**. | `tests/localUri.test.ts`. Still need `! * ~`, empty album/artist, duration rounding. |
-| S6    | 2026-10-20 | 1.3.5.3058 (Win) | 2.45.3 | Partial: no local-folder keys in either prefs file. But `LocalFilesAPI.getSources()` exists (also `addFolder/removeFolder/browseForFolder`), and every track's file path is in its cover URI. | `getLocalSourcesRaw()` added; shape pending next report. Helper can take folders from the app — no prefs parsing. |
+| S6    | 2026-10-20 | 1.3.5.3058 (Win) | 2.45.3 | ✅ Not in prefs files. `LocalFilesAPI.getSources()` → `{ defaultSources: [{id: 'downloads' or 'windows_music_library', enabled}], folders: [{path}] }`. Vivek: one folder, `C:\Users\kathi\Music\iTunes\iTunes Media\Music`. | Helper gets library roots from the app (`getSources().folders`) — no prefs parsing, no asking the user. |
 | S7    |      |         |           |        |           |
 
 ### Notes — 2026-10-20 (Spotify 1.3.5.3058, Spicetify 2.45.3, Windows 11)
@@ -84,3 +84,20 @@ auto-discover folders; if not, the helper asks the user once.
   — candidates for S3.
 - LocalFilesAPI has track-update events (`_subscribeToTracksUpdates`, `_emitTrackUpdate`, debounce
   timers) — relevant to S4 (rescan detection) and the library store's diff-on-rescan.
+
+### S1 follow-up — 2026-10-20
+
+- `album.artist` **never** differs from the first track artist (0/615) → it is *not* the album-artist
+  tag. Confirms Better Local Files' finding; album artist stays helper-only (or heuristic).
+- `artists[]` **never** has more than one entry (0/615) → Spotify passes the joined artist string as
+  one artist. `splitArtists()` remains necessary; it correctly keeps "Captain Beefheart & His Magic
+  Band" whole (we don't split on `&`).
+- The 27 albums with weak numbering are almost all **single-track "albums"** (downloaded singles with
+  no track tag) plus one genuinely untagged album (Days Before Rodeo, 5 tracks). Nothing to fix in
+  code — Library Health (M5) / the editor should flag them.
+- No album has duplicate (disc, track) pairs → title-only grouping isn't merging distinct albums in
+  this library.
+- 609/615 file paths; common prefix = the one configured source folder.
+- Versions: `Platform.version` = "1.3.5.3058", `Platform.operatingSystem` = "Windows",
+  renderer origin = **`https://xpui.app.spotify.com`**.
+- For M2: SEGA OSTs come as "… (Side A)" — candidate for `stripDiscSuffix` if a Side B shows up.

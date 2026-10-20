@@ -7,6 +7,7 @@ import {
   copyToClipboard,
   describeApi,
   getLocalSourcesRaw,
+  getPlayerSnapshot,
   getLocalTracksRaw,
   getVersions,
   listPlatformApis,
@@ -29,7 +30,7 @@ interface Report {
   localish: Record<string, string[]>;
   s1?: unknown;
   s2?: ReachabilityResult[];
-  s3?: { strategy: PlayStrategy; ok: boolean; message?: string }[];
+  s3?: { strategy: PlayStrategy; ok: boolean; message?: string; played?: string[]; snapshot?: unknown }[];
 }
 
 function Section({ title, spike, children }: { title: string; spike?: string; children: ReactNode }) {
@@ -134,9 +135,11 @@ export function DiagnosticsPage() {
       const lib = buildLibrary(tracks);
       const followUp = await s1FollowUp(raws, lib);
       const imageSchemes = [...new Set(tracks.map((t) => t.imageUrl?.split(':').slice(0, 2).join(':') ?? 'none'))];
-      // Pick 3 tracks from the same album (for S3 experiments).
-      const firstMulti = lib.albums.find((a) => a.tracks.length >= 3);
-      setSampleUris(firstMulti ? firstMulti.tracks.slice(0, 3).map((t) => t.uri) : tracks.slice(0, 3).map((t) => t.uri));
+      // S3: tracks 3, 2, 1 of an album with ≥4 tracks. Spotify's own Local Files order would go
+      // 3 → 4 on Next; if it honours our list it goes 3 → 2.
+      const s3Album = lib.albums.find((a) => a.tracks.length >= 4 && hasReliableNumbering(a.tracks));
+      const s3Tracks = s3Album ? s3Album.tracks.slice(0, 3) : tracks.slice(0, 3);
+      setSampleUris(s3Tracks.map((t) => t.uri).reverse());
       setReport((r) => ({
         ...r,
         s1: {
@@ -178,11 +181,19 @@ export function DiagnosticsPage() {
         return;
       }
       const res = await playTracks(sampleUris, 0, strategy);
+      await new Promise((r) => setTimeout(r, 1500)); // let the player settle before reading state
+      const snap = await getPlayerSnapshot();
       setReport((r) => ({
         ...r,
         s3: [
           ...(r.s3 ?? []).filter((x) => x.strategy !== strategy),
-          { strategy, ok: res.ok, message: res.ok ? undefined : `${res.error.message} ${String(res.error.detail ?? '')}` },
+          {
+            strategy,
+            ok: res.ok,
+            message: res.ok ? undefined : `${res.error.message} ${String(res.error.detail ?? '')}`,
+            played: sampleUris,
+            snapshot: snap.ok ? snap.value : snap.error,
+          },
         ],
       }));
     });
@@ -231,11 +242,12 @@ export function DiagnosticsPage() {
 
       <Section title="Playback experiments" spike="S3">
         <p className="crate-muted">
-          Plays 3 tracks from one album with each strategy. After each, check: does Next go to track 2?
-          Does Previous work? What does "Playing from" say? Note it when you paste the report.
+          Plays tracks 3, 2, 1 of one album (reversed on purpose) and records what the player reports
+          as current/next. After each, press Next once: does it go to track 2 (our order) or track 4
+          (Spotify's order)? Note what "Playing from" says.
         </p>
         <div className="crate-row">
-          {(['local-files-context', 'app-context', 'queue-fallback'] as PlayStrategy[]).map((s) => (
+          {(['local-files-context', 'app-context'] as PlayStrategy[]).map((s) => (
             <button key={s} type="button" className="crate-btn crate-btn--ghost" disabled={!!busy} onClick={() => playExperiment(s)}>
               {s}
             </button>
