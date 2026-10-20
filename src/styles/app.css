@@ -111,6 +111,12 @@
 }
 .crate-card {
   all: unset;
+  /* A <button> sizes to its content instead of stretching, so without an explicit width a large
+     cover image makes the card as wide as the image (overlapping cards, 2026-10-20). Padding is
+     inside the width: VirtualGrid assumes card width == column width. */
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -118,8 +124,6 @@
   border-radius: 8px;
   background: transparent;
   cursor: pointer;
-  content-visibility: auto;
-  contain-intrinsic-size: 180px 250px;
   transition: background-color 0.2s;
 }
 .crate-card:hover,
@@ -136,6 +140,10 @@
   left: 0;
   right: 0;
   display: grid;
+}
+.crate-vgrid__row > *,
+.crate-grid > * {
+  min-width: 0;
 }
 .crate-card__title {
   font-weight: 700;

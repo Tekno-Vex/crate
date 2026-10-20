@@ -116,3 +116,6 @@ auto-discover folders; if not, the helper asks the user once.
   variable** `--background-base: #5038a0` (opacity fades on scroll). Crate sets that variable — album
   tint on album pages, `#main-view`'s computed background elsewhere — and re-applies via
   MutationObserver if Spotify rewrites it. Smoke mock reproduces the shape.
+- Main-view scroll container (2026-10-20, 1.3.5): `findScrollParent(.crate-root)` → an unnamed `div`
+  with `overflow-y: scroll` (clientHeight 868 at Vivek's window size). Virtual grid measures against
+  it; scroll restore, search persistence and album-opens-at-top verified live.
