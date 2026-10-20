@@ -292,10 +292,12 @@
 .crate-track:hover {
   background: var(--crate-highlight);
 }
-/* Selected / menu-open row, like Spotify's (theme-aware via Spicetify's selected-row color). */
+/* Selected / menu-open row, like Spotify's. Derived from the theme's text color: an rgb-triplet
+   variable inside rgba() silently invalidates the whole declaration when a theme defines it in
+   another format (no highlight at all on Vivek's theme, 2026-10-20). */
 .crate-track.is-selected,
 .crate-track.is-selected:hover {
-  background: rgba(var(--spice-rgb-selected-row, 255, 255, 255), 0.3);
+  background: color-mix(in srgb, var(--crate-text) 22%, transparent);
 }
 .crate-track:focus-visible {
   outline: 2px solid var(--crate-text);

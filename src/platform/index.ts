@@ -465,8 +465,26 @@ export function registerTrackMenuItem(
 ): Result<() => void> {
   const CM = S()?.ContextMenu;
   if (!CM?.Item) return fail('unavailable', 'Spicetify.ContextMenu.Item not found');
+  // Spicetify calls these inside Spotify's own menu render: a throw there can break the native menu
+  // for every page, so neither may ever throw. Icon only if this Spicetify version knows it.
+  const safeShouldAdd = (uris: unknown) => {
+    try {
+      return Array.isArray(uris) && shouldAdd(uris as string[]);
+    } catch (e) {
+      log.warn(`menu item "${label}" shouldAdd threw`, e);
+      return false;
+    }
+  };
+  const safeOnClick = (uris: unknown) => {
+    try {
+      if (Array.isArray(uris)) onClick(uris as string[]);
+    } catch (e) {
+      log.error(`menu item "${label}" failed`, e);
+    }
+  };
+  const icon = S()?.SVGIcons?.album ? 'album' : undefined;
   try {
-    const item = new CM.Item(label, (uris: string[]) => onClick(uris), (uris: string[]) => shouldAdd(uris), 'album');
+    const item = new CM.Item(label, safeOnClick, safeShouldAdd, icon);
     item.register();
     return ok(() => item.deregister());
   } catch (e) {
