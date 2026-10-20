@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { Album, Library, Track } from '../../domain/model';
 import { formatAlbumDuration, formatTrackDuration, pluralize } from '../../domain/format';
 import { hasReliableNumbering } from '../../domain/ordering';
-import { extractColors, getCurrentTrackUri, notify, onSongChange, playTracks } from '../../platform';
+import { getCurrentTrackUri, headerColor, notify, onSongChange, playTracks } from '../../platform';
 import { Cover } from '../components/Cover';
 import { Empty } from '../components/States';
 import { go } from '../routes';
@@ -14,9 +14,8 @@ function useHeaderColor(album: Album | undefined): string | undefined {
     const uri = album?.tracks[0]?.uri;
     if (!uri) return;
     let alive = true;
-    // UNVERIFIED (spike S7): colorExtractor on local URIs. TODO: canvas fallback.
-    extractColors(uri).then((res) => {
-      if (alive && res.ok) setColor(res.value.DARK_VIBRANT ?? res.value.PROMINENT);
+    headerColor(uri, album?.imageUrl).then((res) => {
+      if (alive && res.ok) setColor(res.value.color);
     });
     return () => {
       alive = false;

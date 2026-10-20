@@ -4,6 +4,7 @@
 // Every call feature-detects and returns a Result instead of throwing into the UI.
 
 import { log } from '../lib/log';
+import { pickHeaderColor } from '../domain/color';
 import type { Track } from '../domain/model';
 import { mapLocalTracks } from './mapLocalTrack';
 
@@ -288,15 +289,73 @@ export async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
-/** UNVERIFIED (spike S7): whether this works for spotify:local: URIs. */
+/**
+ * S7 (1.3.5, 2026-10-20): album headers stayed grey, so this does not yield a color for
+ * spotify:local: URIs. UNVERIFIED (spike S7): whether it throws or returns empty — see Diagnostics.
+ */
 export async function extractColors(uri: string): Promise<Result<Record<string, string>>> {
   const fn = S()?.colorExtractor;
   if (typeof fn !== 'function') return fail('unavailable', 'colorExtractor not found');
   try {
-    return ok(await fn(uri));
+    const res = await fn(uri);
+    if (!res || typeof res !== 'object' || !Object.values(res).some((v) => typeof v === 'string' && v)) {
+      return fail('failed', 'colorExtractor returned no colors', res);
+    }
+    return ok(res);
   } catch (e) {
     return fail('failed', 'colorExtractor threw', String(e));
   }
+}
+
+/**
+ * Downscaled RGBA pixels of an image the renderer can load (e.g. spotify:localfileimage:…).
+ * UNVERIFIED (spike S7): whether getImageData is allowed or the canvas is tainted.
+ */
+export function sampleImagePixels(url: string, size = 32, timeoutMs = 4000): Promise<Result<Uint8ClampedArray>> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const timer = setTimeout(() => resolve(fail('failed', 'image load timed out')), timeoutMs);
+    img.onload = () => {
+      clearTimeout(timer);
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve(fail('unavailable', 'no 2d canvas context'));
+        ctx.drawImage(img, 0, 0, size, size);
+        resolve(ok(ctx.getImageData(0, 0, size, size).data));
+      } catch (e) {
+        resolve(fail('failed', 'canvas read blocked (tainted?)', String(e)));
+      }
+    };
+    img.onerror = () => {
+      clearTimeout(timer);
+      resolve(fail('failed', 'image failed to load', url));
+    };
+    img.src = url;
+  });
+}
+
+/** Header tint for an album: Spotify's extractor first, then our own pick from the cover pixels. */
+export async function headerColor(
+  trackUri: string,
+  imageUrl: string | undefined,
+): Promise<Result<{ color: string; source: 'colorExtractor' | 'canvas' }>> {
+  const ext = await extractColors(trackUri);
+  const extColor = ext.ok ? (ext.value.DARK_VIBRANT ?? ext.value.PROMINENT ?? ext.value.VIBRANT) : undefined;
+  if (extColor) return ok({ color: extColor, source: 'colorExtractor' });
+  if (!imageUrl) return fail('unavailable', 'no cover image');
+  const px = await sampleImagePixels(imageUrl);
+  if (!px.ok) return px;
+  const color = pickHeaderColor(px.value);
+  return color ? ok({ color, source: 'canvas' }) : fail('failed', 'cover has no usable pixels');
+}
+
+/** Names on Spicetify.ReactComponent (spike S7: which native primitives exist on this version). */
+export function listReactComponents(): string[] {
+  const rc = S()?.ReactComponent;
+  return rc ? Object.keys(rc).sort() : [];
 }
 
 // ───────────────────────── context menu ─────────────────────────

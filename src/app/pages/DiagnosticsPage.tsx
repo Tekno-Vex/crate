@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import { pickHeaderColor } from '../../domain/color';
 import { buildLibrary } from '../../domain/grouping';
 import type { Library } from '../../domain/model';
 import { hasReliableNumbering } from '../../domain/ordering';
@@ -7,7 +8,10 @@ import {
   copyToClipboard,
   describeApi,
   getLocalSourcesRaw,
+  extractColors,
   getPlayerSnapshot,
+  listReactComponents,
+  sampleImagePixels,
   getLocalTracksRaw,
   getVersions,
   listPlatformApis,
@@ -30,6 +34,7 @@ interface Report {
   localish: Record<string, string[]>;
   s1?: unknown;
   s2?: ReachabilityResult[];
+  s7?: unknown;
   s3?: { strategy: PlayStrategy; ok: boolean; message?: string; played?: string[]; snapshot?: unknown }[];
 }
 
@@ -198,6 +203,31 @@ export function DiagnosticsPage() {
       }));
     });
 
+  const probeColors = () =>
+    run('s7', async () => {
+      const res = await getLocalTracksRaw();
+      if (!res.ok) {
+        setReport((r) => ({ ...r, s7: { ok: false, error: res.error } }));
+        return;
+      }
+      const albums = buildLibrary(mapLocalTracks(res.value)).albums.filter((a) => a.imageUrl).slice(0, 3);
+      const covers: unknown[] = [];
+      for (const a of albums) {
+        const uri = a.tracks[0]!.uri;
+        const ext = await extractColors(uri);
+        const t0 = performance.now();
+        const px = await sampleImagePixels(a.imageUrl!);
+        covers.push({
+          album: a.title,
+          colorExtractor: ext.ok ? ext.value : ext.error,
+          canvas: px.ok
+            ? { ok: true, ms: Math.round(performance.now() - t0), color: pickHeaderColor(px.value) }
+            : { ok: false, error: px.error },
+        });
+      }
+      setReport((r) => ({ ...r, s7: { covers, reactComponents: listReactComponents() } }));
+    });
+
   const copyReport = async () => {
     const full = { ...report, generatedAt: new Date().toISOString() };
     const ok = await copyToClipboard(JSON.stringify(full, null, 2));
@@ -255,6 +285,17 @@ export function DiagnosticsPage() {
         </div>
         {sampleUris.length > 0 && <Json value={{ sampleUris }} />}
         {report.s3 && <Json value={report.s3} />}
+      </Section>
+
+      <Section title="Cover colors + native components" spike="S7">
+        <p className="crate-muted">
+          Tries Spotify's colorExtractor and our canvas fallback on three covers, and lists
+          Spicetify.ReactComponent primitives.
+        </p>
+        <button type="button" className="crate-btn" disabled={!!busy} onClick={probeColors}>
+          {busy === 's7' ? 'Testing…' : 'Test cover colors'}
+        </button>
+        {report.s7 !== undefined && <Json value={report.s7} />}
       </Section>
 
       <Section title="Platform APIs">
