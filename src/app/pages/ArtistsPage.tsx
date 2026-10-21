@@ -21,8 +21,6 @@ export function ArtistsPage({ library }: { library: Library }) {
   const [query, setQuery] = useUiState('artists.query', '');
   const [storedSort, setSort] = useUiState<string>('artists.sort', 'name', true);
   const sort: SortKey = isSortKey(storedSort) ? storedSort : 'name';
-  // Artists with no album of their own (features, compilation tracks) are hidden unless asked for.
-  const [showFeatured, setShowFeatured] = useUiState('artists.showFeatured', false, true);
 
   const added = useMemo(() => {
     const m = new Map<Artist, number>();
@@ -36,14 +34,12 @@ export function ArtistsPage({ library }: { library: Library }) {
     return m;
   }, [library]);
 
-  const featuredCount = useMemo(() => library.artists.filter((a) => !a.albumKeys.length).length, [library]);
   const artists = useMemo(() => {
     const q = normalizeText(query);
-    const list = library.artists.filter(
-      (a) => (showFeatured || a.albumKeys.length > 0) && (!q || normalizeText(a.name).includes(q)),
-    );
+    // Only artists with an album of their own; featured artists show up on those albums' artist pages.
+    const list = library.artists.filter((a) => a.albumKeys.length > 0 && (!q || normalizeText(a.name).includes(q)));
     return list.sort((a, b) => SORTS[sort].cmp(a, b, added));
-  }, [library, added, query, sort, showFeatured]);
+  }, [library, added, query, sort]);
 
   if (library.tracks.length === 0) return <Empty title="No local files found" />;
 
@@ -53,16 +49,6 @@ export function ArtistsPage({ library }: { library: Library }) {
         <h1 className="crate-h1">Artists</h1>
         <span className="crate-muted">{pluralize(artists.length, 'artist')}</span>
         <div className="crate-spacer" />
-        {featuredCount > 0 && (
-          <button
-            type="button"
-            className={`crate-chip ${showFeatured ? 'is-active' : ''}`}
-            aria-pressed={showFeatured}
-            onClick={() => setShowFeatured(!showFeatured)}
-          >
-            Include featured ({featuredCount})
-          </button>
-        )}
         <input
           className="crate-input"
           type="search"
@@ -86,7 +72,7 @@ export function ArtistsPage({ library }: { library: Library }) {
           items={artists}
           getKey={(a) => a.key}
           scrollKey="artists"
-          resetScrollOn={`${sort}:${showFeatured}:${query}`}
+          resetScrollOn={`${sort}:${query}`}
           renderItem={(artist) => <ArtistCard artist={artist} />}
         />
       )}

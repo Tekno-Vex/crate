@@ -23,8 +23,11 @@ export function useShuffle(): [boolean, () => void] {
   return [on, () => void toggle()];
 }
 
-/** Play `uris` as one context starting at `index`, reporting failures as a Spotify toast. */
-export async function playList(uris: string[], index: number): Promise<void> {
-  const res = await playTracks(uris, index);
+/**
+ * Play `uris` as one context starting at `index`, reporting failures as a Spotify toast.
+ * `shuffle` makes sure Spotify shuffles the new context (see playTracks).
+ */
+export async function playList(uris: string[], index: number, shuffle = false): Promise<void> {
+  const res = await playTracks(uris, index, undefined, { shuffle });
   if (!res.ok) notify(`Couldn't play: ${res.error.message}`, true);
 }

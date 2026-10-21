@@ -228,6 +228,7 @@ export async function playTracks(
   uris: string[],
   index = 0,
   strategy: PlayStrategy = 'local-files-context',
+  options: { shuffle?: boolean } = {},
 ): Promise<Result<PlayStrategy>> {
   const s = S();
   const api = s?.Platform?.PlayerAPI;
@@ -242,6 +243,10 @@ export async function playTracks(
         {},
         { skipTo: { index, uri: uris[index] } },
       );
+      // Seen 2026-10-20 (1.3.5): with shuffle just turned on, a freshly started context sometimes
+      // played in order after the first track. Re-asserting shuffle after play() makes Spotify
+      // shuffle the context it just loaded. UNVERIFIED (S3 follow-up): confirm live.
+      if (options.shuffle && api.setShuffle) await api.setShuffle(true);
       return ok(strategy);
     }
     // Fallback: play the chosen track, queue the rest. Next works; shuffle/prev don't know the album.

@@ -28,7 +28,7 @@ Tick items as they land (same commit). Each milestone ends shippable.
 - [x] Track row: hover play, double-click play, right-click → native track context menu
   (click selects, Enter plays; TrackMenu props UNVERIFIED until checked live)
 - [x] Artists view + artist → albums
-  (own albums vs "Appears on"; featured-only artists behind a toggle; album artist links to artist)
+  (own albums vs "Appears on"; only artists with their own albums are listed; album artist links to artist)
 - [ ] Empty/error states (local files disabled, zero tracks, internals changed)
 - [ ] Tested with a 20k-track synthetic library (fixture generator in tests)
 - [ ] README + screenshots; publish v0.1 to GitHub with `spicetify-apps` topic

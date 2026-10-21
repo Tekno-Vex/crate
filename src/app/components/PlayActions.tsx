@@ -11,7 +11,7 @@ export function PlayActions({ uris, label }: { uris: string[]; label: string }) 
         className="crate-play"
         aria-label={`Play ${label}`}
         disabled={!uris.length}
-        onClick={() => void playList(uris, pickStartIndex(uris.length, shuffle))}
+        onClick={() => void playList(uris, pickStartIndex(uris.length, shuffle), shuffle)}
       >
         <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
           <path fill="currentColor" d="M7 4.5v15l13-7.5z" />

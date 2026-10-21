@@ -8,6 +8,7 @@ import { Cover } from '../components/Cover';
 import { PlayActions } from '../components/PlayActions';
 import { Empty } from '../components/States';
 import { TrackRow } from '../components/TrackRow';
+import { getShuffle } from '../../platform';
 import { go } from '../routes';
 import { useHeaderColor, useScrollToTop } from '../usePageChrome';
 import { playList, useNowPlaying } from '../usePlayer';
@@ -34,7 +35,8 @@ export function AlbumPage({ library, albumKey }: { library: Library; albumKey: s
   }
 
   const uris = album.tracks.map((t) => t.uri);
-  const play = (index: number) => void playList(uris, index);
+  // Double-click / Enter on a row: respect the current shuffle mode, like Spotify.
+  const play = (index: number) => void playList(uris, index, getShuffle());
   // Link the album artist to their artist page (not for "Various Artists").
   const ownerKey = album.albumArtist === VARIOUS_ARTISTS ? undefined : artistKey(album.albumArtist);
   const owner = ownerKey && library.artistsByKey.has(ownerKey) ? ownerKey : undefined;

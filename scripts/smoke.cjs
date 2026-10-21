@@ -238,7 +238,8 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   const shuffleOn = { pressed: shuffleBtn().getAttribute('aria-pressed'), label: shuffleBtn().getAttribute('aria-label') };
   await act(async () => click(w.document.querySelector('.crate-play')));
   await act(async () => new Promise((r) => setTimeout(r, 20)));
-  const shufflePlay = played.at(-1);
+  const shufflePlay = played.filter((p) => p[0] === 'play').at(-1);
+  const reassertedShuffle = JSON.stringify(played.at(-1)) === JSON.stringify(['shuffle', true]);
   await act(async () => click(shuffleBtn()));
   const shuffleOff = shuffleBtn().getAttribute('aria-pressed');
   console.log('shuffle on:', shuffleOn, '→ play:', JSON.stringify(shufflePlay), '→ off:', shuffleOff);
@@ -254,9 +255,7 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   const artistPlay = played.at(-1);
   await act(async () => history.push('/crate/artists'));
   const artistCards = cards();
-  await act(async () => click([...w.document.querySelectorAll('button')].find((b) => b.textContent.startsWith('Include featured'))));
-  const artistCardsWithFeatured = cards();
-  console.log('artist link →', artistRoute, artistTitle, artistAlbums, '| artists:', artistCards, '+featured:', artistCardsWithFeatured);
+  console.log('artist link →', artistRoute, artistTitle, artistAlbums, '| artists:', artistCards);
 
   await act(async () => history.push('/crate'));
   const albumsTopBar = topBar();
@@ -296,13 +295,13 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   assert.deepEqual(artistAlbums, ['Box']);
   assert.equal(artistPlay[0], 'play');
   assert.equal(artistPlay[2].length, 3, 'artist Play queues all of their album tracks');
-  assert.deepEqual(artistCards, ['Artist A', 'Solo'], 'featured-only artists hidden by default');
-  assert.deepEqual(artistCardsWithFeatured, ['Artist A', 'Guest', 'Solo']);
+  assert.deepEqual(artistCards, ['Artist A', 'Solo'], 'only artists with their own albums are listed');
   assert.deepEqual(shuffleOn, { pressed: 'true', label: 'Disable shuffle' });
   assert.equal(shufflePlay[0], 'play');
   assert.ok(shufflePlay[3] >= 0 && shufflePlay[3] < shufflePlay[2].length, 'shuffled start is inside the album');
   assert.equal(shuffleOff, 'false');
-  assert.deepEqual(played.filter((p) => p[0] === 'shuffle'), [['shuffle', true], ['shuffle', false]]);
+  assert.ok(reassertedShuffle, 'shuffle is re-asserted right after starting a shuffled context');
+  assert.deepEqual(played.filter((p) => p[0] === 'shuffle'), [['shuffle', true], ['shuffle', true], ['shuffle', false]]);
   assert.equal(played[0][0], 'play');
   assert.equal(played[0][1], 'spotify:internal:local-files');
   assert.deepEqual(played[0][2].length, 3, 'whole album passed as the context page');
