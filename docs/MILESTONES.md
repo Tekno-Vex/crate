@@ -31,7 +31,8 @@ Tick items as they land (same commit). Each milestone ends shippable.
   (own albums vs "Appears on"; only artists with their own albums are listed; album artist links to artist)
 - [x] Empty/error states (local files disabled, zero tracks, internals changed)
   (one LibraryProblem screen: off / no folders / empty folders / API changed / scan failed + stale banner)
-- [ ] Tested with a 20k-track synthetic library (fixture generator in tests)
+- [x] Tested with a 20k-track synthetic library (fixture generator in tests)
+  (node, 20k: build ~140 ms, diff ~45 ms, 1-edit rescan replaces 1 album; Diagnostics → Stress test for live)
 - [ ] README + screenshots; publish v0.1 to GitHub with `spicetify-apps` topic
 
 ## M2 — Everywhere + smart grouping (v0.2)

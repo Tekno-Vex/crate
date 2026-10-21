@@ -151,6 +151,18 @@ export function LibraryProblem({ trackCount, scanError, onRescan }: Props) {
   }
 }
 
+/** Shown on every page while Diagnostics' stress-test library is loaded. */
+export function SyntheticBanner({ trackCount, onExit }: { trackCount: number; onExit: () => void }) {
+  return (
+    <div className="crate-banner" role="status">
+      <span>Stress test: showing {trackCount.toLocaleString()} fake tracks. They don't play.</span>
+      <button type="button" className="crate-link" onClick={onExit}>
+        Back to my library
+      </button>
+    </div>
+  );
+}
+
 /** Thin notice when a rescan failed but the saved library is still shown. */
 export function StaleBanner({ error, onRetry }: { error: PlatformError; onRetry: () => void }) {
   return (

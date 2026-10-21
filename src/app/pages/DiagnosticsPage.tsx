@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { pickHeaderColor } from '../../domain/color';
+import { syntheticTracks } from '../../domain/synthetic';
 import { menuItemsSafe } from '../../domain/compat';
 import { buildLibrary } from '../../domain/grouping';
 import type { Library } from '../../domain/model';
@@ -44,6 +45,7 @@ interface Report {
   s1?: unknown;
   s2?: ReachabilityResult[];
   s7?: unknown;
+  stress?: unknown;
   topBar?: unknown;
   s3?: { strategy: PlayStrategy; ok: boolean; message?: string; played?: string[]; snapshot?: unknown }[];
 }
@@ -334,6 +336,47 @@ export function DiagnosticsPage() {
           {busy === 's7' ? 'Testing…' : 'Test cover colors'}
         </button>
         {report.s7 !== undefined && <Json value={report.s7} />}
+      </Section>
+
+      <Section title="Stress test">
+        <p className="crate-muted">
+          Swaps in a fake library (made with your real covers) to check scrolling and search at scale.
+          Memory only — your real library and cache are untouched. Fake tracks don't play.
+        </p>
+        <div className="crate-row">
+          {[5_000, 20_000, 50_000].map((n) => (
+            <button
+              key={n}
+              type="button"
+              className="crate-btn crate-btn--ghost"
+              onClick={() => {
+                const st = libraryStore().getState();
+                const covers = st.status === 'ready' ? [...new Set(st.library.albums.map((a) => a.imageUrl).filter((u): u is string => !!u))] : [];
+                const t0 = performance.now();
+                const tracks = syntheticTracks({ trackCount: n, imagePool: covers });
+                const genMs = Math.round(performance.now() - t0);
+                const buildMs = libraryStore().loadSynthetic(tracks);
+                const lib = libraryStore().getState();
+                setReport((r) => ({
+                  ...r,
+                  stress: {
+                    tracks: n,
+                    generateMs: genMs,
+                    buildLibraryMs: buildMs,
+                    albums: lib.status === 'ready' ? lib.library.albums.length : 0,
+                    artists: lib.status === 'ready' ? lib.library.artists.length : 0,
+                  },
+                }));
+              }}
+            >
+              Load {n.toLocaleString()} test tracks
+            </button>
+          ))}
+          <button type="button" className="crate-btn" onClick={() => void libraryStore().refresh()}>
+            Back to my library
+          </button>
+        </div>
+        {report.stress !== undefined && <Json value={report.stress} />}
       </Section>
 
       <Section title="Crate's right-click item">

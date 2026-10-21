@@ -33,6 +33,8 @@ export type LibraryState =
       refreshing: boolean;
       /** Last live-scan failure while a cached library is still shown. */
       staleError?: PlatformError;
+      /** A fake library from Diagnostics → Stress test (memory only, never cached). */
+      synthetic?: boolean;
     };
 
 export interface LibraryStoreDeps {
@@ -49,8 +51,13 @@ export interface LibraryStore {
   subscribe(listener: () => void): () => void;
   /** First call: load cache, then rescan, then watch for changes. Later calls: rescan. */
   start(): Promise<void>;
-  /** Rescan Spotify now; concurrent calls share one scan. */
+  /** Rescan Spotify now; concurrent calls share one scan. Also ends a synthetic (stress-test) library. */
   refresh(): Promise<void>;
+  /**
+   * Show `tracks` instead of the real library — for stress-testing the UI. Memory only: never written
+   * to the cache, and automatic rescans are paused until refresh(). Returns the build time in ms.
+   */
+  loadSynthetic(tracks: Track[]): number;
   getTint(key: string): string | undefined;
   setTint(key: string, color: string): void;
   stop(): void;
@@ -131,6 +138,7 @@ export function createLibraryStore(deps: LibraryStoreDeps): LibraryStore {
         const cache = loadCache().catch((e) => log.warn('cache load failed', e));
         await Promise.all([cache, store.refresh()]);
         unsubscribeExternal = deps.onExternalChange?.(() => {
+          if (state.status === 'ready' && state.synthetic) return; // stress test: don't swap it out
           clearTimeout(debounce);
           debounce = setTimeout(() => void store.refresh(), deps.debounceMs ?? 500);
         });
@@ -144,6 +152,12 @@ export function createLibraryStore(deps: LibraryStoreDeps): LibraryStore {
           inflight = null;
         });
       return inflight;
+    },
+    loadSynthetic(tracks) {
+      const t0 = now();
+      const library = rebuildLibrary(undefined, tracks);
+      set({ status: 'ready', library, source: 'live', updatedAt: now(), refreshing: false, synthetic: true });
+      return now() - t0;
     },
     getTint: (key) => tints.get(key),
     setTint(key, color) {

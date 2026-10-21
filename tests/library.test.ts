@@ -4,6 +4,7 @@ import { diffTracks, rebuildLibrary } from '../src/domain/libraryDiff';
 import type { Track } from '../src/domain/model';
 import type { KeyValueStore } from '../src/lib/idb';
 import type { Result } from '../src/platform';
+import { syntheticTracks } from '../src/domain/synthetic';
 import { track } from './fixtures';
 
 const lib = () => [
@@ -138,6 +139,26 @@ describe('library store', () => {
     fire();
     fire();
     await vi.waitFor(() => expect(fetchTracks).toHaveBeenCalledTimes(3));
+  });
+
+  it('stress-test library: memory only, ignores rescans, ends on refresh', async () => {
+    const fetchTracks = vi.fn(() => okTracks(lib()));
+    let fire!: () => void;
+    const cache = memoryCache();
+    const store = createLibraryStore({ fetchTracks, cache, onExternalChange: (cb) => ((fire = cb), () => {}), debounceMs: 1 });
+    await store.start();
+    const writes = cache.sets;
+    store.loadSynthetic(syntheticTracks({ trackCount: 500 }));
+    expect(store.getState()).toMatchObject({ status: 'ready', synthetic: true });
+    fire();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(fetchTracks).toHaveBeenCalledTimes(1); // focus/change events don't replace the test library
+    expect(cache.sets).toBe(writes); // never cached
+    await store.refresh();
+    const st = store.getState() as Extract<LibraryState, { status: 'ready' }>;
+    expect(st.synthetic).toBeUndefined();
+    expect(st.library.tracks).toHaveLength(3);
+    expect(cache.sets).toBe(writes); // real scan identical to the cached one → still no write
   });
 
   it('persists header tints', async () => {

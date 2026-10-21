@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { ensureStyles } from '../lib/style';
 import { Nav } from './components/Nav';
-import { LibraryProblem, StaleBanner } from './components/LibraryProblem';
+import { LibraryProblem, StaleBanner, SyntheticBanner } from './components/LibraryProblem';
 import { Loading } from './components/States';
 import { AlbumPage } from './pages/AlbumPage';
 import { AlbumsPage } from './pages/AlbumsPage';
@@ -53,6 +53,9 @@ export default function App() {
   return (
     <div className="crate-root">
       <Nav route={route} />
+      {lib.status === 'ready' && lib.synthetic && (
+        <SyntheticBanner trackCount={lib.library.tracks.length} onExit={lib.reload} />
+      )}
       {lib.status === 'ready' && lib.staleError && route.name !== 'diagnostics' && (
         <StaleBanner error={lib.staleError} onRetry={lib.reload} />
       )}
