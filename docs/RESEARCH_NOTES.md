@@ -51,3 +51,9 @@
 - Spicetify shipped "WebNowPlaying Companion" talking over WebSocket on localhost:8974 years ago;
   several community projects (spicetify-websocket, spotify_info) use localhost bridges. Still must
   verify on 1.3.x (spike S2).
+
+## Update 2026-10-20
+
+- Spicetify **2.46.0–2.46.2** (released 2026-10-20) add Spotify 1.3.5/1.3.6 support. 2.45.x on 1.3.5
+  breaks every menu Spicetify extends (profile menu, Local Files right-click, extension menu items).
+  The README should tell users to update Spicetify before reporting menu problems.

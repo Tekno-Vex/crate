@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { pickHeaderColor } from '../../domain/color';
+import { menuItemsSafe } from '../../domain/compat';
 import { buildLibrary } from '../../domain/grouping';
 import type { Library } from '../../domain/model';
 import { hasReliableNumbering } from '../../domain/ordering';
@@ -135,7 +136,10 @@ export function DiagnosticsPage() {
 
   const [report, setReport] = useState<Report>(() => ({ generatedAt: new Date().toISOString(), ...base }));
   const [busy, setBusy] = useState<string | null>(null);
-  const [menuItemOn, setMenuItemOn] = useState(isTrackMenuItemEnabled);
+  const [menuItemOn, setMenuItemOn] = useState(() => {
+    const v = getVersions();
+    return isTrackMenuItemEnabled(menuItemsSafe(v.spicetify, v.spotify));
+  });
   const [sampleUris, setSampleUris] = useState<string[]>([]);
 
   const run = async (label: string, fn: () => Promise<void>) => {
@@ -334,8 +338,8 @@ export function DiagnosticsPage() {
 
       <Section title="Crate's right-click item">
         <p className="crate-muted">
-          Experimental, off by default: on Spotify 1.3.5 adding "Go to album (Crate)" to Spotify's menu
-          stops right-click from opening on local tracks in playlists. Applies immediately.
+          Adds "Go to album (Crate)" to Spotify's menu for local tracks. On by default, except with a
+          Spicetify older than 2.46 on Spotify 1.3.2+, where Spicetify breaks those menus. Applies immediately.
         </p>
         <button
           type="button"

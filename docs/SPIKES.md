@@ -143,3 +143,15 @@ auto-discover folders; if not, the helper asks the user once.
 - Spotify's **Local Files page**: right-click on local tracks does not open **even with our item off**
   — separate cause, not yet known (pre-existing? `full-queue-clear`? theme?). Crate's own album pages
   use `ReactComponent.TrackMenu` directly and work.
+
+### Resolution — Spicetify 2.46.2 (2026-10-20)
+
+- Root cause of the broken menus: **Spicetify 2.45.3 did not support Spotify 1.3.5** (2.45.x: ≤1.3.1).
+  It also broke the profile menu and right-click in Spotify's Local Files page — not Crate-specific.
+  Spicetify **2.46.0** added 1.3.5/1.3.6 support (2.46.1/2.46.2: extension + topbar fixes).
+- After `spicetify upgrade` + `spicetify restore backup apply` (→ 2.46.2): "Go to album (Crate)"
+  shows in native playlist menus next to "Remove from this playlist", Local Files right-click works,
+  profile menu works. Item is **on by default again**, except for the known-bad combination
+  (Spicetify < 2.46 on Spotify ≥ 1.3.2) — `domain/compat.ts`, tested.
+- Local files toggle verified live: `getIsEnabled`/`setIsEnabled(true)` work; after turning on,
+  Spotify re-indexes for a while with `getTracks()` → [] — Crate now keeps rescanning (1.5 s, ≤30 s).

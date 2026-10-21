@@ -5,7 +5,8 @@ import { isLocalUri, parseLocalUri } from '../domain/localUri';
 import { albumKey, stripDiscSuffix } from '../domain/normalize';
 import { log } from '../lib/log';
 import { isTrackMenuItemEnabled, TRACK_MENU_EVENT } from '../lib/trackMenuSwitch';
-import { navigate, registerTrackMenuItem, whenReady } from '../platform';
+import { getVersions, navigate, registerTrackMenuItem, whenReady } from '../platform';
+import { menuItemsSafe } from '../domain/compat';
 
 async function main() {
   if (!(await whenReady())) return;
@@ -34,7 +35,8 @@ async function main() {
     }
     log.info(`track menu item ${enabled ? 'enabled' : 'disabled'}`);
   };
-  applyMenuItem(isTrackMenuItemEnabled());
+  const v = getVersions();
+  applyMenuItem(isTrackMenuItemEnabled(menuItemsSafe(v.spicetify, v.spotify)));
   window.addEventListener(TRACK_MENU_EVENT, (e) => applyMenuItem((e as CustomEvent<boolean>).detail));
 
   // TODO(M2): now-playing album-name click → Crate album page for local tracks.

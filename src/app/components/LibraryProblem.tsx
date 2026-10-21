@@ -14,6 +14,8 @@ interface Props {
 export function LibraryProblem({ trackCount, scanError, onRescan }: Props) {
   const [problem, setProblem] = useState<Problem>();
   const [busy, setBusy] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [checks, setChecks] = useState(0);
 
   useEffect(() => {
     let alive = true;
@@ -23,16 +25,35 @@ export function LibraryProblem({ trackCount, scanError, onRescan }: Props) {
     return () => {
       alive = false;
     };
-  }, [trackCount, scanError]);
+  }, [trackCount, scanError, checks]);
 
+  // After turning local files on, Spotify re-indexes the folders for a while and getTracks() comes
+  // back empty until it's done (seen live 2026-10-20). Keep rescanning; this screen unmounts as soon
+  // as tracks arrive. Give up after 30 s and show the diagnosis again.
+  useEffect(() => {
+    if (!scanning) return;
+    const tick = setInterval(onRescan, 1500);
+    const stop = setTimeout(() => {
+      setScanning(false);
+      setChecks((n) => n + 1);
+    }, 30_000);
+    return () => {
+      clearInterval(tick);
+      clearTimeout(stop);
+    };
+  }, [scanning]);
+
+  if (scanning) return <Loading label="Spotify is scanning your folders…" />;
   if (!problem) return <Loading label="Checking your local files…" />;
 
   const turnOn = async () => {
     setBusy(true);
     const res = await setLocalFilesEnabled(true);
     setBusy(false);
-    if (res.ok) onRescan();
-    else notify(`Couldn't turn on local files: ${res.error.message}. Use Spotify settings instead.`, true);
+    if (res.ok) {
+      onRescan();
+      setScanning(true);
+    } else notify(`Couldn't turn on local files: ${res.error.message}. Use Spotify settings instead.`, true);
   };
 
   const settings = (

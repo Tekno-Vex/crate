@@ -2,19 +2,20 @@
 // (Diagnostics toggle) and the extension. They share no variables, so: localStorage for the stored
 // value, a window CustomEvent carrying the new value for live changes.
 //
-// Verified 2026-10-20 (Spotify 1.3.5 / Spicetify 2.45.3): with the item registered via
-// Spicetify.ContextMenu.Item, right-click and the ⋯ button on local tracks in native playlists stop
-// opening at all, and the item itself never shows. Off → menus work again. So it is OFF by default
-// (opt-in, experimental) until M2 finds a registration that works on 1.3.x.
+// History (2026-10-20): on Spotify 1.3.5 with Spicetify 2.45.3 the item broke native menus for local
+// tracks. Cause: that Spicetify didn't support 1.3.5 (it broke the profile menu too). Spicetify 2.46.2
+// fixed it — item works, menus fine. Default is now ON unless the running versions are the known-bad
+// combination (domain/compat.ts); an explicit user choice always wins.
 
 import { readUi, writeUi } from './uiState';
 
-// v2: the default flipped to off; a new key resets anyone who had it on under the old default.
-const KEY = 'trackMenuItem.v2';
+// v3: default back to on (version-aware). New key so choices made while it was broken don't stick.
+const KEY = 'trackMenuItem.v3';
 export const TRACK_MENU_EVENT = `${__APP_ID__}:track-menu-item`;
 
-export function isTrackMenuItemEnabled(): boolean {
-  return readUi<boolean>(KEY, false, true);
+/** `safeByDefault`: from menuItemsSafe(spicetify, spotify) — used when the user never chose. */
+export function isTrackMenuItemEnabled(safeByDefault = true): boolean {
+  return readUi<boolean>(KEY, safeByDefault, true);
 }
 
 export function setTrackMenuItemEnabled(enabled: boolean): void {
