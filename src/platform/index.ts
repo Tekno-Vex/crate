@@ -274,15 +274,17 @@ export type PlayStrategy = 'local-files-context' | 'app-context' | 'queue-fallba
 
 /**
  * Play an ordered list of URIs starting at `index`.
- * Verified on 1.3.5 (spike S3, 2026-10-20): both context strategies play OUR page order (a
- * reversed 3-2-1 list played 3 → 2 → 1), Next/Prev work, and local-files-context shows
- * "Local Files" as the source. queue-fallback plays NOTHING (Player.playUri ignores
- * spotify:local: URIs) — kept only for Diagnostics.
+ * Verified on 1.3.5 (spike S3, 2026-10-20): both context strategies played OUR page order at first
+ * (a reversed 3-2-1 list played 3 → 2 → 1). BUT after local files were switched off and on, the
+ * local-files context resolved to Spotify's own whole Local Files list and ignored our pages
+ * ("Next up" = random library tracks). spotify:app:crate is not a list Spotify can resolve, so it
+ * always plays our pages — the default. Cost: no "Playing from" label.
+ * queue-fallback plays NOTHING (Player.playUri ignores spotify:local: URIs) — Diagnostics only.
  */
 export async function playTracks(
   uris: string[],
   index = 0,
-  strategy: PlayStrategy = 'local-files-context',
+  strategy: PlayStrategy = 'app-context',
   options: { shuffle?: boolean } = {},
 ): Promise<Result<PlayStrategy>> {
   const s = S();

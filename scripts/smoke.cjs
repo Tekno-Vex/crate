@@ -140,7 +140,7 @@ w.Spicetify = {
         played.push(['shuffle', on]);
       },
       addToQueue: async (items) => played.push(['queue', items.map((i) => i.uri)]), play: async (ctx, _opts, extra) => played.push(['play', ctx.uri, ctx.pages[0].items.map((i) => i.uri), extra.skipTo.index]),
-      getState: async () => ({ context: { uri: 'spotify:internal:local-files' }, item: { uri: rawTracks[1].uri } }),
+      getState: async () => ({ context: { uri: 'spotify:app:crate' }, item: { uri: rawTracks[1].uri } }),
       getQueue: async () => ({ nextUp: [{ uri: rawTracks[2].uri }] }),
     },
     ClipboardAPI: { copy: async () => {} },
@@ -305,7 +305,7 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   assert.equal(freshStartTopBar, 'rgb(18, 18, 18)', 'fresh start: layer found structurally and painted');
   assert.equal(albumTopBar, /--crate-tint: (#[0-9a-f]{6})/.exec(tint)[1], 'album page paints the top bar with its tint');
   assert.equal(albumsTopBar, 'rgb(18, 18, 18)', 'other pages paint the top bar with the main-view background');
-  // S3 round 1: playUri ignores local URIs on 1.3.5, so albums play as a local-files context.
+  // playUri ignores local URIs on 1.3.5, so albums play as a context of our own (S3 + follow-up).
   assert.equal(selectedRow, 'Second', 'single click selects the row');
   assert.equal(menuUri, rawTracks[2].uri, 'right-click opens the native track menu for that row');
   assert.equal(dblPlay?.[3], 1, 'double-click plays that row inside the album context');
@@ -325,7 +325,7 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   assert.ok(reassertedShuffle, 'shuffle is re-asserted right after starting a shuffled context');
   assert.deepEqual(played.filter((p) => p[0] === 'shuffle'), [['shuffle', true], ['shuffle', true], ['shuffle', false]]);
   assert.equal(played[0][0], 'play');
-  assert.equal(played[0][1], 'spotify:internal:local-files');
+  assert.equal(played[0][1], 'spotify:app:crate', 'albums play as our own app context (S3 follow-up)');
   assert.deepEqual(played[0][2].length, 3, 'whole album passed as the context page');
   assert.equal(s1.rawCount, rawTracks.length);
   await act(async () => root.unmount());

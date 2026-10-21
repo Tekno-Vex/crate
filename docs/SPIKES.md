@@ -155,3 +155,8 @@ auto-discover folders; if not, the helper asks the user once.
   (Spicetify < 2.46 on Spotify ≥ 1.3.2) — `domain/compat.ts`, tested.
 - Local files toggle verified live: `getIsEnabled`/`setIsEnabled(true)` work; after turning on,
   Spotify re-indexes for a while with `getTracks()` → [] — Crate now keeps rescanning (1.5 s, ≤30 s).
+- **Local-files context stops honouring our pages** (2026-10-20, after turning local files off → on
+  from Crate): clicking track 1 of an album played it, but "Next up" was Spotify's own Local Files
+  list (unrelated tracks), shuffle off. Spotify resolves `spotify:internal:local-files` to its own
+  list once it has (re)built it. Default switched to `spotify:app:crate` (S3: plays our order;
+  no "Playing from" label). Re-verify with Diagnostics → Playback experiments (reversed 3-2-1).
