@@ -1,8 +1,8 @@
 {
   "name": "Crate",
-  "description": "A real album library for your Spotify local files — album pages with ordered tracklists, plus an optional in-app tag editor.",
+  "description": "Your Spotify local files as a real album library — album and artist pages with tracks in order, cover-tinted headers, and smooth with 50,000+ tracks.",
   "preview": "docs/images/preview.png",
   "readme": "README.md",
-  "authors": [{ "name": "Vivekanandhan Kathirvel", "url": "https://github.com/REPLACE_WITH_GITHUB_USERNAME" }],
-  "tags": ["local files", "albums", "library", "metadata", "tag editor"]
+  "authors": [{ "name": "Vivekanandhan Kathirvel", "url": "https://github.com/Tekno-Vex" }],
+  "tags": ["local files", "albums", "artists", "library"]
 }

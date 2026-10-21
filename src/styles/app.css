@@ -257,7 +257,7 @@
   border-radius: 50%;
   border: 0;
   background: var(--crate-button);
-  color: #000;
+  color: var(--crate-button-text);
   display: grid;
   place-items: center;
   cursor: pointer;

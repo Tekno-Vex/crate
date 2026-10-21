@@ -1,6 +1,6 @@
 {
   "name": "crate-spicetify",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "description": "A real album library for your Spotify local files, with an in-app tag editor. Spicetify custom app.",
   "author": "Vivekanandhan Kathirvel",
