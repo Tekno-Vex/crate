@@ -94,21 +94,35 @@ export function groupAlbums(tracks: readonly Track[], options: GroupingOptions =
   return albums;
 }
 
+/**
+ * Artists from albums. An album belongs to its album artist; every other credited track artist
+ * "appears on" it. Various Artists albums belong to nobody — all their artists appear on them.
+ */
 export function buildArtists(albums: readonly Album[]): Artist[] {
   const map = new Map<string, Artist>();
+  const entry = (name: string): Artist => {
+    const key = artistKey(name);
+    let a = map.get(key);
+    if (!a) map.set(key, (a = { key, name, albumKeys: [], appearsOnKeys: [], trackCount: 0 }));
+    return a;
+  };
   for (const album of albums) {
-    const names = album.albumArtist === VARIOUS_ARTISTS ? album.artists : [album.albumArtist];
-    for (const name of names) {
-      const key = artistKey(name);
-      const trackCount = album.tracks.filter((t) => t.artists.some((a) => artistKey(a) === key)).length;
-      const existing = map.get(key);
-      if (existing) {
-        if (!existing.albumKeys.includes(album.key)) existing.albumKeys.push(album.key);
-        existing.trackCount += trackCount;
-      } else {
-        map.set(key, { key, name, albumKeys: [album.key], trackCount });
+    const ownerKey = album.albumArtist === VARIOUS_ARTISTS ? undefined : artistKey(album.albumArtist);
+    if (ownerKey) entry(album.albumArtist).albumKeys.push(album.key);
+    for (const name of album.artists) {
+      const a = entry(name);
+      if (a.key !== ownerKey && !a.appearsOnKeys.includes(album.key)) a.appearsOnKeys.push(album.key);
+    }
+    for (const track of album.tracks) {
+      for (const key of new Set(track.artists.map(artistKey))) {
+        const a = map.get(key);
+        if (a) a.trackCount++;
       }
     }
+  }
+  const byKey = new Map(albums.map((a) => [a.key, a]));
+  for (const a of map.values()) {
+    a.imageUrl = [...a.albumKeys, ...a.appearsOnKeys].map((k) => byKey.get(k)?.imageUrl).find(Boolean);
   }
   return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
 }

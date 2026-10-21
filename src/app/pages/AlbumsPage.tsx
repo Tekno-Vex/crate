@@ -2,11 +2,10 @@ import { useMemo } from 'react';
 import type { Album, Library } from '../../domain/model';
 import { normalizeText } from '../../domain/normalize';
 import { pluralize } from '../../domain/format';
-import { Cover } from '../components/Cover';
+import { AlbumCard } from '../components/Cards';
 import { Empty } from '../components/States';
 import { VirtualGrid } from '../components/VirtualGrid';
 import { useUiState } from '../useUiState';
-import { go } from '../routes';
 
 type SortKey = 'title' | 'artist' | 'tracks' | 'recent';
 
@@ -85,17 +84,7 @@ export function AlbumsPage({ library }: { library: Library }) {
           getKey={(a) => a.key}
           scrollKey="albums"
           resetScrollOn={`${sort}:${query}`}
-          renderItem={(album) => (
-            <button type="button" className="crate-card" onClick={() => go.album(album.key)}>
-              <Cover src={album.imageUrl} alt={album.title} />
-              <div className="crate-card__title" title={album.title}>
-                {album.title}
-              </div>
-              <div className="crate-card__sub" title={album.albumArtist}>
-                {album.albumArtist}
-              </div>
-            </button>
-          )}
+          renderItem={(album) => <AlbumCard album={album} />}
         />
       )}
     </section>

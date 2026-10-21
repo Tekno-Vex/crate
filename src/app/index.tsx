@@ -4,6 +4,8 @@ import { Nav } from './components/Nav';
 import { ErrorState, Loading } from './components/States';
 import { AlbumPage } from './pages/AlbumPage';
 import { AlbumsPage } from './pages/AlbumsPage';
+import { ArtistPage } from './pages/ArtistPage';
+import { ArtistsPage } from './pages/ArtistsPage';
 import { DiagnosticsPage } from './pages/DiagnosticsPage';
 import { go, useRoute } from './routes';
 import { useLibrary } from './useLibrary';
@@ -14,8 +16,8 @@ export default function App() {
   useEffect(ensureStyles, []);
   const route = useRoute();
   const lib = useLibrary();
-  // Album pages paint the bar with their cover color; every other Crate page uses the neutral one.
-  useTopBarColor(route.name === 'album' ? undefined : NEUTRAL_TOP_BAR);
+  // Album/artist pages paint the bar with their cover color; every other Crate page uses the neutral one.
+  useTopBarColor(route.name === 'album' || route.name === 'artist' ? undefined : NEUTRAL_TOP_BAR);
 
   let body;
   if (route.name === 'diagnostics') {
@@ -29,6 +31,10 @@ export default function App() {
     body = <AlbumPage library={lib.library} albumKey={route.key} />;
   } else if (route.name === 'albums') {
     body = <AlbumsPage library={lib.library} />;
+  } else if (route.name === 'artist') {
+    body = <ArtistPage library={lib.library} artistKey={route.key} />;
+  } else if (route.name === 'artists') {
+    body = <ArtistsPage library={lib.library} />;
   } else {
     body = (
       <div className="crate-state">

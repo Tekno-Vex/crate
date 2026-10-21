@@ -392,3 +392,45 @@
   white-space: pre;
   user-select: text;
 }
+
+/* ── Artists ─────────────────────────────── */
+.crate-card--artist .crate-cover {
+  border-radius: 50%;
+}
+.crate-artist__image {
+  border-radius: 50%;
+}
+.crate-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+.crate-h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.crate-link {
+  all: unset;
+  font-weight: 700;
+  cursor: pointer;
+}
+.crate-link:hover,
+.crate-link:focus-visible {
+  text-decoration: underline;
+}
+.crate-chip {
+  all: unset;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--crate-highlight);
+  color: var(--crate-text);
+  font-size: 0.875rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.crate-chip.is-active {
+  background: var(--crate-text);
+  color: var(--crate-card);
+}

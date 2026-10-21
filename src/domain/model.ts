@@ -48,8 +48,14 @@ export interface Album {
 export interface Artist {
   key: string;
   name: string;
+  /** Albums where this artist is the album artist. */
   albumKeys: string[];
+  /** Albums they only appear on (features, Various Artists compilations). */
+  appearsOnKeys: string[];
+  /** Tracks this artist is credited on, across all albums. */
   trackCount: number;
+  /** Spotify exposes no artist photos for local files — an album cover stands in. */
+  imageUrl?: string;
 }
 
 export interface Library {

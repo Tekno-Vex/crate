@@ -1,81 +1,25 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { Album, Library, Track } from '../../domain/model';
+import { useEffect, useRef, useState } from 'react';
+import type { Library, Track } from '../../domain/model';
+import { VARIOUS_ARTISTS } from '../../domain/model';
 import { formatAlbumDuration, pluralize } from '../../domain/format';
+import { artistKey } from '../../domain/normalize';
 import { hasReliableNumbering } from '../../domain/ordering';
-import { pickStartIndex } from '../../domain/playback';
-import {
-  findScrollParent,
-  getCurrentTrackUri,
-  getShuffle,
-  headerColor,
-  notify,
-  onShuffleChange,
-  onSongChange,
-  playTracks,
-  setShuffle,
-} from '../../platform';
 import { Cover } from '../components/Cover';
-import { TrackRow } from '../components/TrackRow';
-import { libraryStore } from '../libraryStore';
-import { NEUTRAL_TOP_BAR, useTopBarColor } from '../useTopBarColor';
+import { PlayActions } from '../components/PlayActions';
 import { Empty } from '../components/States';
+import { TrackRow } from '../components/TrackRow';
 import { go } from '../routes';
-
-function useHeaderColor(album: Album | undefined): string | undefined {
-  const [color, setColor] = useState<string>();
-  useEffect(() => {
-    const uri = album?.tracks[0]?.uri;
-    const cacheKey = album?.imageUrl ?? album?.key;
-    const cached = cacheKey ? libraryStore().getTint(cacheKey) : undefined;
-    setColor(cached);
-    if (!uri || !cacheKey || cached) return;
-    let alive = true;
-    headerColor(uri, album?.imageUrl).then((res) => {
-      if (!res.ok) return;
-      libraryStore().setTint(cacheKey, res.value.color);
-      if (alive) setColor(res.value.color);
-    });
-    return () => {
-      alive = false;
-    };
-  }, [album?.key]);
-  return color;
-}
-
-function useNowPlaying(): string | undefined {
-  const [uri, setUri] = useState(getCurrentTrackUri);
-  useEffect(() => onSongChange(setUri), []);
-  return uri;
-}
-
-/** Spotify's global shuffle mode — follows toggles from the player bar too. */
-function useShuffle(): [boolean, () => void] {
-  const [on, setOn] = useState(getShuffle);
-  useEffect(() => onShuffleChange(setOn), []);
-  const toggle = async () => {
-    const next = !on;
-    setOn(next); // optimistic — the player bar updates a moment later
-    const res = await setShuffle(next);
-    if (!res.ok) {
-      setOn(!next);
-      notify(`Couldn't change shuffle: ${res.error.message}`, true);
-    }
-  };
-  return [on, () => void toggle()];
-}
+import { useHeaderColor, useScrollToTop } from '../usePageChrome';
+import { playList, useNowPlaying } from '../usePlayer';
+import { NEUTRAL_TOP_BAR, useTopBarColor } from '../useTopBarColor';
 
 export function AlbumPage({ library, albumKey }: { library: Library; albumKey: string }) {
   const album = library.albumsByKey.get(albumKey);
-  const color = useHeaderColor(album);
+  const color = useHeaderColor(album?.tracks[0]?.uri, album?.imageUrl, albumKey);
   useTopBarColor(color ?? NEUTRAL_TOP_BAR);
-  // Spotify's scroll container is shared across pages — open every album at the top.
   const pageRef = useRef<HTMLElement>(null);
-  useLayoutEffect(() => {
-    const scroller = findScrollParent(pageRef.current);
-    if (scroller) scroller.scrollTop = 0;
-  }, [albumKey]);
+  useScrollToTop(pageRef, albumKey);
   const nowPlaying = useNowPlaying();
-  const [shuffle, toggleShuffle] = useShuffle();
   const [selected, setSelected] = useState<string>();
   useEffect(() => setSelected(undefined), [albumKey]);
 
@@ -90,10 +34,10 @@ export function AlbumPage({ library, albumKey }: { library: Library; albumKey: s
   }
 
   const uris = album.tracks.map((t) => t.uri);
-  const play = async (index: number) => {
-    const res = await playTracks(uris, index);
-    if (!res.ok) notify(`Couldn't play: ${res.error.message}`, true);
-  };
+  const play = (index: number) => void playList(uris, index);
+  // Link the album artist to their artist page (not for "Various Artists").
+  const ownerKey = album.albumArtist === VARIOUS_ARTISTS ? undefined : artistKey(album.albumArtist);
+  const owner = ownerKey && library.artistsByKey.has(ownerKey) ? ownerKey : undefined;
 
   const numbered = hasReliableNumbering(album.tracks);
   const multiDisc = album.discs.length > 1;
@@ -114,7 +58,13 @@ export function AlbumPage({ library, albumKey }: { library: Library; albumKey: s
           <span className="crate-eyebrow">Album · Local files</span>
           <h1 className="crate-album__title">{album.title}</h1>
           <div className="crate-album__line">
-            <strong>{album.albumArtist}</strong>
+            {owner ? (
+              <button type="button" className="crate-link" onClick={() => go.artist(owner)}>
+                {album.albumArtist}
+              </button>
+            ) : (
+              <strong>{album.albumArtist}</strong>
+            )}
             {album.year ? <span> · {album.year}</span> : null}
             <span> · {pluralize(album.tracks.length, 'song')}</span>
             <span className="crate-muted">, {formatAlbumDuration(album.durationMs)}</span>
@@ -122,37 +72,7 @@ export function AlbumPage({ library, albumKey }: { library: Library; albumKey: s
         </div>
       </header>
 
-      <div className="crate-album__actions">
-        <button
-          type="button"
-          className="crate-play"
-          aria-label="Play"
-          onClick={() => play(pickStartIndex(album.tracks.length, shuffle))}
-        >
-          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
-            <path fill="currentColor" d="M7 4.5v15l13-7.5z" />
-          </svg>
-        </button>
-        <button
-          type="button"
-          className={`crate-icon-btn ${shuffle ? 'is-active' : ''}`}
-          aria-label={shuffle ? 'Disable shuffle' : 'Enable shuffle'}
-          aria-pressed={shuffle}
-          title={shuffle ? 'Disable shuffle' : 'Enable shuffle'}
-          onClick={toggleShuffle}
-        >
-          <svg viewBox="0 0 16 16" width="24" height="24" aria-hidden="true">
-            <path
-              fill="currentColor"
-              d="M13.151.922a.75.75 0 1 0-1.06 1.06L13.109 3H11.16a3.75 3.75 0 0 0-2.873 1.34l-6.173 7.356A2.25 2.25 0 0 1 .39 12.5H0V14h.391a3.75 3.75 0 0 0 2.873-1.34l6.173-7.356a2.25 2.25 0 0 1 1.724-.804h1.947l-1.017 1.018a.75.75 0 0 0 1.06 1.06L15.98 3.75 13.15.922zM.391 3.5H0V2h.391c1.109 0 2.16.49 2.873 1.34L4.89 5.277l-.979 1.167-1.796-2.14A2.25 2.25 0 0 0 .39 3.5z"
-            />
-            <path
-              fill="currentColor"
-              d="m7.5 10.723.98-1.167.957 1.14a2.25 2.25 0 0 0 1.724.804h1.947l-1.017-1.018a.75.75 0 1 1 1.06-1.06l2.829 2.828-2.829 2.828a.75.75 0 1 1-1.06-1.06L13.109 13H11.16a3.75 3.75 0 0 1-2.873-1.34l-.787-.938z"
-            />
-          </svg>
-        </button>
-      </div>
+      <PlayActions uris={uris} label={album.title} />
 
       <ol className="crate-tracklist" role="list">
         <li className="crate-tracklist__head" aria-hidden="true">

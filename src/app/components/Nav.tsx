@@ -10,7 +10,7 @@ export function Nav({ route }: { route: Route }) {
   return (
     <nav className="crate-nav">
       {tab('Albums', route.name === 'albums' || route.name === 'album', go.albums)}
-      {/* TODO(M1): Artists tab */}
+      {tab('Artists', route.name === 'artists' || route.name === 'artist', go.artists)}
       {tab('Diagnostics', route.name === 'diagnostics', go.diagnostics)}
     </nav>
   );

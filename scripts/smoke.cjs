@@ -243,6 +243,21 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   const shuffleOff = shuffleBtn().getAttribute('aria-pressed');
   console.log('shuffle on:', shuffleOn, '→ play:', JSON.stringify(shufflePlay), '→ off:', shuffleOff);
 
+  // Album artist links to the artist page; artist page lists albums and plays them all.
+  const artistLink = w.document.querySelector('.crate-album__line .crate-link');
+  await act(async () => click(artistLink));
+  const artistRoute = history.location.pathname;
+  const artistAlbums = [...w.document.querySelectorAll('.crate-card__title')].map((e) => e.textContent);
+  const artistTitle = w.document.querySelector('.crate-album__title')?.textContent;
+  await act(async () => click(w.document.querySelector('.crate-play')));
+  await act(async () => new Promise((r) => setTimeout(r, 20)));
+  const artistPlay = played.at(-1);
+  await act(async () => history.push('/crate/artists'));
+  const artistCards = cards();
+  await act(async () => click([...w.document.querySelectorAll('button')].find((b) => b.textContent.startsWith('Include featured'))));
+  const artistCardsWithFeatured = cards();
+  console.log('artist link →', artistRoute, artistTitle, artistAlbums, '| artists:', artistCards, '+featured:', artistCardsWithFeatured);
+
   await act(async () => history.push('/crate'));
   const albumsTopBar = topBar();
   console.log('top bar on albums page:', albumsTopBar);
@@ -276,6 +291,13 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   assert.equal(selectedRow, 'Second', 'single click selects the row');
   assert.equal(menuUri, rawTracks[2].uri, 'right-click opens the native track menu for that row');
   assert.equal(dblPlay?.[3], 1, 'double-click plays that row inside the album context');
+  assert.equal(artistRoute, '/crate/artist/artist-a', 'album artist name links to the artist page');
+  assert.equal(artistTitle, 'Artist A');
+  assert.deepEqual(artistAlbums, ['Box']);
+  assert.equal(artistPlay[0], 'play');
+  assert.equal(artistPlay[2].length, 3, 'artist Play queues all of their album tracks');
+  assert.deepEqual(artistCards, ['Artist A', 'Solo'], 'featured-only artists hidden by default');
+  assert.deepEqual(artistCardsWithFeatured, ['Artist A', 'Guest', 'Solo']);
   assert.deepEqual(shuffleOn, { pressed: 'true', label: 'Disable shuffle' });
   assert.equal(shufflePlay[0], 'play');
   assert.ok(shufflePlay[3] >= 0 && shufflePlay[3] < shufflePlay[2].length, 'shuffled start is inside the album');
