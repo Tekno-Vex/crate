@@ -32,7 +32,8 @@ Tick items as they land (same commit). Each milestone ends shippable.
 - [x] Empty/error states (local files disabled, zero tracks, internals changed)
   (one LibraryProblem screen: off / no folders / empty folders / API changed / scan failed + stale banner)
 - [x] Tested with a 20k-track synthetic library (fixture generator in tests)
-  (node, 20k: build ~140 ms, diff ~45 ms, 1-edit rescan replaces 1 album; Diagnostics → Stress test for live)
+  (node, 20k: build ~140 ms, diff ~45 ms, 1-edit rescan replaces 1 album. Live in Spotify 1.3.5,
+  2026-10-20: 20k → 81 ms build / 1,601 albums; 50k → 173 ms / 4,005 albums; scroll + search smooth)
 - [ ] README + screenshots; publish v0.1 to GitHub with `spicetify-apps` topic
 
 ## M2 — Everywhere + smart grouping (v0.2)
