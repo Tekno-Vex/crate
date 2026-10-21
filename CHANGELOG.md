@@ -22,8 +22,8 @@ First release: your local files as a real album library.
   and when local files are switched on or off.
 - **Clear empty and error states** with one-click fixes: local files off, no folders, empty
   folders, Spotify internals changed.
-- **Diagnostics page**: version info, checks of the Spotify internals Crate relies on, Copy report,
-  and a stress test.
+- **Diagnostics** (the ⓘ button): Copy report for bug reports, version info, and the menu-item
+  switch. Developer probes and a stress test sit in a collapsed section.
 
 ### Requirements
 - Spicetify 2.46+ for Spotify 1.3.5 and later. Tested on Spotify 1.3.5 (Windows) with Spicetify 2.46.2.

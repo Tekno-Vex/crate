@@ -238,7 +238,7 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   await act(async () => new Promise((r) => setTimeout(r, 20)));
   const dblPlay = played.slice(playsBefore).find((p) => p[0] === 'play');
   console.log('row click selects:', selectedRow, '| right-click menu for:', menuUri, '| double-click plays index:', dblPlay?.[3]);
-  const shuffleBtn = () => w.document.querySelector('.crate-icon-btn');
+  const shuffleBtn = () => w.document.querySelector('.crate-album__actions .crate-icon-btn');
   const click = (el) => el.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
   await act(async () => click(shuffleBtn()));
   const shuffleOn = { pressed: shuffleBtn().getAttribute('aria-pressed'), label: shuffleBtn().getAttribute('aria-label') };

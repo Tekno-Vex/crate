@@ -27,9 +27,12 @@ right order.
 - **Built for big libraries**: smooth with 50,000+ tracks. Your library is cached, so Crate opens
   instantly, and it updates on its own when your files change.
 - **Helpful when something's off**: Crate tells you if local files are turned off, no folder is
-  added, or a folder has no music, and offers the fix.
+  added, or a folder has no music, and offers the fix. The **ⓘ** button copies a report for bug
+  reports.
 
-<!-- Add more screenshots: docs/images/albums.png, docs/images/artist.png -->
+| Albums | Artist |
+| --- | --- |
+| ![Albums grid](docs/images/albums.png) | ![Artist page](docs/images/artist.png) |
 
 ## Requirements
 
@@ -97,8 +100,9 @@ you edit them from inside Spotify.
 ## Compatibility
 
 Tested on **Spotify 1.3.5 (Windows) with Spicetify 2.46.2**. macOS and Linux should work but aren't
-tested yet. If something breaks after a Spotify update, open **Crate → Diagnostics**, click
-**Copy report**, and paste it into an [issue](https://github.com/Tekno-Vex/crate/issues).
+tested yet. If something breaks after a Spotify update, click the **ⓘ** button at the top right of
+Crate to open Diagnostics, click **Copy report**, and paste it into an
+[issue](https://github.com/Tekno-Vex/crate/issues).
 
 ## Credits
 

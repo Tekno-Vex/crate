@@ -14,6 +14,7 @@
 
 .crate-nav {
   display: flex;
+  align-items: center;
   gap: 8px;
   margin-bottom: 16px;
 }
@@ -439,4 +440,29 @@
   background: var(--crate-highlight);
   color: var(--crate-subtext);
   font-size: 0.875rem;
+}
+
+/* ── Diagnostics: user part first, developer probes collapsed ── */
+.crate-nav__diag.is-current {
+  color: var(--crate-text);
+}
+.crate-diag__intro {
+  max-width: 720px;
+}
+.crate-devtools {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.crate-devtools > summary {
+  cursor: pointer;
+  color: var(--crate-subtext);
+  font-weight: 700;
+  padding: 8px 0;
+}
+.crate-devtools[open] > summary {
+  margin-bottom: 16px;
+}
+.crate-devtools > :not(summary) + :not(summary) {
+  margin-top: 16px;
 }

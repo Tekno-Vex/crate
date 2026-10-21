@@ -271,9 +271,37 @@ export function DiagnosticsPage() {
         </button>
       </header>
 
+      <p className="crate-muted crate-diag__intro">
+        Something not working? Click <strong>Copy report</strong> and paste it into an issue on GitHub — it
+        tells us your Spotify and Spicetify versions and which parts of Spotify Crate can reach. Your music
+        isn't included unless you run the developer probes below (they add a few track names and paths).
+      </p>
+
       <Section title="Versions">
         <Json value={report.versions} />
       </Section>
+
+      <Section title="Crate's right-click item">
+        <p className="crate-muted">
+          Adds "Go to album (Crate)" to Spotify's menu for local tracks. On by default, except with a
+          Spicetify older than 2.46 on Spotify 1.3.2+, where Spicetify breaks those menus. Applies immediately.
+        </p>
+        <button
+          type="button"
+          className="crate-btn"
+          onClick={() => {
+            const next = !menuItemOn;
+            setTrackMenuItemEnabled(next);
+            setMenuItemOn(next);
+          }}
+        >
+          {menuItemOn ? 'Turn off "Go to album (Crate)"' : 'Turn on "Go to album (Crate)"'}
+        </button>
+      </Section>
+
+      <details className="crate-devtools">
+        <summary>Developer tools</summary>
+        <p className="crate-muted">Probes used to verify Spotify internals (docs/SPIKES.md). Some start playback.</p>
 
       <Section title="Library store + change events">
         <p className="crate-muted">
@@ -379,24 +407,6 @@ export function DiagnosticsPage() {
         {report.stress !== undefined && <Json value={report.stress} />}
       </Section>
 
-      <Section title="Crate's right-click item">
-        <p className="crate-muted">
-          Adds "Go to album (Crate)" to Spotify's menu for local tracks. On by default, except with a
-          Spicetify older than 2.46 on Spotify 1.3.2+, where Spicetify breaks those menus. Applies immediately.
-        </p>
-        <button
-          type="button"
-          className="crate-btn"
-          onClick={() => {
-            const next = !menuItemOn;
-            setTrackMenuItemEnabled(next);
-            setMenuItemOn(next);
-          }}
-        >
-          {menuItemOn ? 'Turn off "Go to album (Crate)"' : 'Turn on "Go to album (Crate)"'}
-        </button>
-      </Section>
-
       <Section title="Top bar">
         <p className="crate-muted">
           Lists full-width elements pinned to the top of Spotify's main view, best guess first. Crate
@@ -417,6 +427,7 @@ export function DiagnosticsPage() {
         <p className="crate-muted">Everything on Spicetify.Platform, plus methods of the library-related ones.</p>
         <Json value={{ all: report.platformApis, methods: report.localish }} />
       </Section>
+      </details>
     </section>
   );
 }
