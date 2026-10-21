@@ -8,7 +8,7 @@ import { rebuildLibrary, diffTracks } from '../domain/libraryDiff';
 import type { Library, Track } from '../domain/model';
 import { kv, type KeyValueStore } from '../lib/idb';
 import { log } from '../lib/log';
-import { getLocalTracks, onLocalTracksChanged, type PlatformError, type Result } from '../platform';
+import { getLocalTracks, onLocalFilesEnabledChange, onLocalTracksChanged, type PlatformError, type Result } from '../platform';
 
 /** Bump when the cached Track shape changes (mapper/model changes), to discard old caches. */
 export const CACHE_SCHEMA = 1;
@@ -171,11 +171,13 @@ export function libraryStore(): LibraryStore {
     cache: kv,
     onExternalChange: (cb) => {
       const offSpotify = onLocalTracksChanged(cb);
+      const offEnabled = onLocalFilesEnabledChange(cb);
       // Rescan when Spotify regains focus — covers files added while the window was in background.
       const onFocus = () => cb();
       window.addEventListener('focus', onFocus);
       return () => {
         offSpotify();
+        offEnabled();
         window.removeEventListener('focus', onFocus);
       };
     },

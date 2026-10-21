@@ -420,3 +420,23 @@
 .crate-link:focus-visible {
   text-decoration: underline;
 }
+
+/* ── Problems ───────────────────────────── */
+.crate-folder-list {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--crate-subtext);
+  font-family: var(--font-family-monospace, ui-monospace, monospace);
+  font-size: 0.8125rem;
+}
+.crate-banner {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  background: var(--crate-highlight);
+  color: var(--crate-subtext);
+  font-size: 0.875rem;
+}

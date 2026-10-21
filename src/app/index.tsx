@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { ensureStyles } from '../lib/style';
 import { Nav } from './components/Nav';
-import { ErrorState, Loading } from './components/States';
+import { LibraryProblem, StaleBanner } from './components/LibraryProblem';
+import { Loading } from './components/States';
 import { AlbumPage } from './pages/AlbumPage';
 import { AlbumsPage } from './pages/AlbumsPage';
 import { ArtistPage } from './pages/ArtistPage';
@@ -26,7 +27,10 @@ export default function App() {
   } else if (lib.status === 'loading') {
     body = <Loading />;
   } else if (lib.status === 'error') {
-    body = <ErrorState error={lib.error} onRetry={lib.reload} />;
+    body = <LibraryProblem trackCount={0} scanError={lib.error} onRescan={lib.reload} />;
+  } else if (lib.library.tracks.length === 0) {
+    // One explanation for every page: off, no folders, empty folders.
+    body = <LibraryProblem trackCount={0} onRescan={lib.reload} />;
   } else if (route.name === 'album') {
     body = <AlbumPage library={lib.library} albumKey={route.key} />;
   } else if (route.name === 'albums') {
@@ -49,6 +53,9 @@ export default function App() {
   return (
     <div className="crate-root">
       <Nav route={route} />
+      {lib.status === 'ready' && lib.staleError && route.name !== 'diagnostics' && (
+        <StaleBanner error={lib.staleError} onRetry={lib.reload} />
+      )}
       {body}
     </div>
   );

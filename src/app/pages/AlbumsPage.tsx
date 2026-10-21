@@ -3,7 +3,6 @@ import type { Album, Library } from '../../domain/model';
 import { normalizeText } from '../../domain/normalize';
 import { pluralize } from '../../domain/format';
 import { AlbumCard } from '../components/Cards';
-import { Empty } from '../components/States';
 import { VirtualGrid } from '../components/VirtualGrid';
 import { useUiState } from '../useUiState';
 
@@ -41,16 +40,6 @@ export function AlbumsPage({ library }: { library: Library }) {
     const filtered = q ? library.albums.filter((a) => searchIndex.get(a)!.includes(q)) : library.albums;
     return [...filtered].sort((a, b) => SORTS[sort].cmp(a, b, added));
   }, [library, searchIndex, added, query, sort]);
-
-  if (library.tracks.length === 0) {
-    return (
-      <Empty title="No local files found">
-        <p className="crate-muted">
-          Turn on "Show Local Files" in Spotify settings and add a folder, then reload this page.
-        </p>
-      </Empty>
-    );
-  }
 
   return (
     <section className="crate-page">

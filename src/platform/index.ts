@@ -190,6 +190,61 @@ export function describeLocalFilesEvents(): unknown {
   return { found: true, ownKeys: Object.keys(em), methods: [...methods].sort(), listenerNames };
 }
 
+export interface LocalFilesStatus {
+  /** undefined = this Spotify doesn't tell us. */
+  enabled?: boolean;
+  folders: string[];
+  enabledDefaultSources: number;
+}
+
+/**
+ * Is "Show Local Files" on, and which folders are set up. getSources() shape verified (S6).
+ * UNVERIFIED: getIsEnabled() — sync or async, boolean — so both are handled.
+ */
+export async function getLocalFilesStatus(): Promise<LocalFilesStatus> {
+  const api = S()?.Platform?.LocalFilesAPI;
+  let enabled: boolean | undefined;
+  try {
+    const v = await api?.getIsEnabled?.();
+    if (typeof v === 'boolean') enabled = v;
+  } catch {
+    // unknown
+  }
+  const sources = await getLocalSourcesRaw();
+  const raw: any = sources.ok ? sources.value : {};
+  const folders = Array.isArray(raw?.folders) ? raw.folders.map((f: any) => f?.path).filter((p: unknown) => typeof p === 'string') : [];
+  const enabledDefaultSources = Array.isArray(raw?.defaultSources) ? raw.defaultSources.filter((d: any) => d?.enabled).length : 0;
+  return { enabled, folders, enabledDefaultSources };
+}
+
+/**
+ * Turn "Show Local Files" on/off — only ever from an explicit button press. UNVERIFIED: setIsEnabled
+ * takes a boolean; the result is re-read rather than trusted.
+ */
+export async function setLocalFilesEnabled(on: boolean): Promise<Result<boolean>> {
+  const api = S()?.Platform?.LocalFilesAPI;
+  if (typeof api?.setIsEnabled !== 'function') return fail('unavailable', 'LocalFilesAPI.setIsEnabled not found');
+  try {
+    await api.setIsEnabled(on);
+    const now = (await getLocalFilesStatus()).enabled;
+    return now === undefined || now === on ? ok(on) : fail('failed', 'Spotify did not change the setting');
+  } catch (e) {
+    return fail('failed', 'setIsEnabled threw', String(e));
+  }
+}
+
+/** Calls `cb` when local files are switched on/off. UNVERIFIED: subscribeIsEnabled(cb) signature. */
+export function onLocalFilesEnabledChange(cb: () => void): () => void {
+  const api = S()?.Platform?.LocalFilesAPI;
+  if (typeof api?.subscribeIsEnabled !== 'function') return () => {};
+  try {
+    const off = api.subscribeIsEnabled(() => cb());
+    return typeof off === 'function' ? off : typeof off?.cancel === 'function' ? () => off.cancel() : () => {};
+  } catch {
+    return () => {};
+  }
+}
+
 /** Raw objects from Spotify. Verified on 1.3.5 (S1): getTracks() resolves to a plain array. */
 export async function getLocalTracksRaw(): Promise<Result<unknown[]>> {
   const api = S()?.Platform?.LocalFilesAPI;
@@ -361,6 +416,11 @@ export function navigate(pathname: string, state?: Record<string, unknown>): voi
   const history = S()?.Platform?.History;
   if (!history) return log.warn('History unavailable; cannot navigate to', pathname);
   history.push(state ? { pathname, state } : pathname);
+}
+
+/** Spotify's Settings page (where "Show Local Files" and folders live). UNVERIFIED (1.3.5): route path. */
+export function openSpotifySettings(): void {
+  navigate('/preferences');
 }
 
 export function onLocationChange(cb: (loc: Location) => void): () => void {

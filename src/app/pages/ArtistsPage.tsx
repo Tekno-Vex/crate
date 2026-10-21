@@ -3,7 +3,6 @@ import type { Artist, Library } from '../../domain/model';
 import { normalizeText } from '../../domain/normalize';
 import { pluralize } from '../../domain/format';
 import { ArtistCard } from '../components/Cards';
-import { Empty } from '../components/States';
 import { VirtualGrid } from '../components/VirtualGrid';
 import { useUiState } from '../useUiState';
 
@@ -40,8 +39,6 @@ export function ArtistsPage({ library }: { library: Library }) {
     const list = library.artists.filter((a) => a.albumKeys.length > 0 && (!q || normalizeText(a.name).includes(q)));
     return list.sort((a, b) => SORTS[sort].cmp(a, b, added));
   }, [library, added, query, sort]);
-
-  if (library.tracks.length === 0) return <Empty title="No local files found" />;
 
   return (
     <section className="crate-page">

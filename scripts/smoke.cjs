@@ -38,6 +38,7 @@ const history = {
   },
 };
 const played = [];
+let localFilesOn = true;
 const menuItems = [];
 // Same shape LocalFilesAPI.getTracks() returns on Spotify 1.3.5.3058 (spike S1, 2026-10-20):
 // discNumber/trackNumber always numbers (0 = untagged), addedAt a Date, cover URI = file path.
@@ -118,7 +119,13 @@ w.Spicetify = {
     version: '1.3.5.3058',
     operatingSystem: 'Windows',
     LocalFilesAPI: {
-      getTracks: async () => rawTracks,
+      // UNVERIFIED (1.3.5): getIsEnabled/setIsEnabled shapes; assumed boolean, and getTracks → []
+      // while local files are off.
+      getTracks: async () => (localFilesOn ? rawTracks : []),
+      getIsEnabled: () => localFilesOn,
+      setIsEnabled: async (on) => {
+        localFilesOn = on;
+      },
       // Verified shape on 1.3.5 (spike S6, 2026-10-20).
       getSources: async () => ({
         defaultSources: [{ enabled: false, id: 'downloads' }, { enabled: false, id: 'windows_music_library' }],
@@ -266,6 +273,18 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   await act(async () => new Promise((r) => setTimeout(r, 50)));
   const pre = [...w.document.querySelectorAll('.crate-pre')].map((p) => p.textContent);
   const s1 = JSON.parse(pre.find((p) => p.includes('rawCount')));
+  // Local files switched off → every page explains it and offers the fix.
+  localFilesOn = false;
+  await act(async () => history.push('/crate'));
+  await act(async () => w.dispatchEvent(new w.Event('focus')));
+  await act(async () => new Promise((r) => setTimeout(r, 700))); // store debounce + rescan
+  const problem = w.document.querySelector('[data-problem]')?.getAttribute('data-problem');
+  const turnOn = [...w.document.querySelectorAll('button')].find((b) => b.textContent === 'Turn on local files');
+  await act(async () => click(turnOn));
+  await act(async () => new Promise((r) => setTimeout(r, 100)));
+  const cardsAfterTurnOn = cards();
+  console.log('local files off →', problem, '→ turn on →', cardsAfterTurnOn);
+
   console.log('diagnostics S1:', { rawCount: s1.rawCount, albumCount: s1.albumCount, fields: Object.keys(s1.fieldInventory).length });
 
   const assert = require('node:assert/strict');
@@ -296,6 +315,9 @@ const run = (file) => new Function(fs.readFileSync(path.join(dist, file), 'utf8'
   assert.equal(artistPlay[0], 'play');
   assert.equal(artistPlay[2].length, 3, 'artist Play queues all of their album tracks');
   assert.deepEqual(artistCards, ['Artist A', 'Solo'], 'only artists with their own albums are listed');
+  assert.equal(problem, 'disabled', 'empty library with local files off explains why');
+  assert.equal(localFilesOn, true, '"Turn on local files" switches the setting on');
+  assert.deepEqual(cardsAfterTurnOn, ['Box', 'Other'], 'library comes back after turning local files on');
   assert.deepEqual(shuffleOn, { pressed: 'true', label: 'Disable shuffle' });
   assert.equal(shufflePlay[0], 'play');
   assert.ok(shufflePlay[3] >= 0 && shufflePlay[3] < shufflePlay[2].length, 'shuffled start is inside the album');
